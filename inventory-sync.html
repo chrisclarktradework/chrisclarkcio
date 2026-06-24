@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dairy Inventory Tracker &middot; V1.3</title>
+<style>
+/* =====================================================================
+   SPYGLASS INVENTORY SYNC V1.3
+   Incorporates end user, ops manager, warehouse worker, and UI designer
+   feedback. Adds a plant floor tab.
+
+   DESIGN SYSTEM RULES
+   1. Three type steps only. Georgia serif for identity and numbers,
+      Helvetica sans for body, SF Mono for code and IDs.
+   2. Status palette strictly green, amber, red. Gold is reserved for
+      Brand palette. AI content uses purple. Data viz uses muted neutrals.
+   3. Uniform row height 48px for list items and table rows.
+   4. All tappable elements are 44px minimum. Primary actions 48px.
+   ===================================================================== */
+
+:root {
+  /* Brand chrome - dark, for header and nav only */
+  --chrome-deep: #1F1408;
+  --chrome-panel: #2D1F12;
+  --chrome-surface: #3A2A18;
+  --chrome-border: #4A3522;
+  --chrome-border-md: #6B4F32;
+
+  /* Work surfaces - cream, for content */
+  --work-bg: #F2EBD9;
+  --work-panel: #FBF6E8;
+  --work-surface: #FFFDF5;
+  --work-border: #D8C89E;
+  --work-border-dk: #B89E6A;
+  --work-text: #3A2A15;
+  --work-text-muted: #6B5636;
+  --work-text-dim: #8F7A55;
+  --chrome-text: #F2E8D4;
+  --chrome-text-muted: #A89576;
+
+  /* Brand accent - brand only, never status */
+  --brand-gold: #C8A060;
+  --brand-gold-bright: #D4A853;
+  --brand-cream: #E6D9B8;
+
+  /* Status - strict three */
+  --s-good: #3E7142;
+  --s-good-bg: #E3EED3;
+  --s-warn: #9E5E0F;
+  --s-warn-bg: #F7EBC8;
+  --s-bad: #B04528;
+  --s-bad-bg: #F6D8CB;
+
+  /* AI accent - purple */
+  --ai: #6A4B95;
+  --ai-bg: #EDE3F5;
+  --ai-soft: #A788C8;
+
+  /* Data viz - muted */
+  --data-1: #6B7280;
+  --data-2: #4B5563;
+  --data-3: #9CA3AF;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--work-bg);
+  color: var(--work-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 14px; /* UP from 13px for warehouse worker readability */
+  line-height: 1.5;
+  padding-bottom: 54px;
+}
+.serif { font-family: Georgia, serif; letter-spacing: 0.04em; }
+.mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+a { color: var(--brand-gold); text-decoration: none; }
+a:hover { color: var(--brand-gold-bright); text-decoration: underline; }
+
+/* ===================================================================
+   RADIOS AND CHECKBOXES (hidden, drive CSS-only state)
+   =================================================================== */
+.tab-radio, .period-radio, .help-toggle { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+
+/* ===================================================================
+   HEADER
+   =================================================================== */
+header.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 10px 22px;
+  background: linear-gradient(180deg, #3A281A 0%, var(--chrome-panel) 100%);
+  border-bottom: 2px solid var(--brand-gold);
+  color: var(--chrome-text);
+}
+.brand { display: flex; flex-direction: column; border-right: 1px solid var(--chrome-border-md); padding-right: 18px; }
+.brand .name { font-family: Georgia, serif; font-size: 22px; color: var(--chrome-text); letter-spacing: 0.15em; }
+.brand .tag { font-size: 9px; color: var(--brand-gold); letter-spacing: 0.3em; margin-top: 2px; }
+.title-block .title { font-family: Georgia, serif; font-size: 16px; color: var(--brand-gold-bright); letter-spacing: 0.16em; }
+.title-block .sub { font-size: 11px; color: #A8906A; letter-spacing: 0.12em; margin-top: 3px; }
+.diamond { color: var(--brand-gold); font-size: 10px; margin-right: 6px; }
+
+.env-pill { padding: 4px 10px; border-radius: 2px; font-size: 10px; letter-spacing: 0.18em; font-weight: 700; background: var(--s-good); color: #F5F1E0; }
+
+/* UPDATED role chip leads with scope (DeWitt Shift A) per end user feedback */
+.role-chip { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 4px 14px; border-left: 1px solid var(--chrome-border-md); }
+.role-chip .scope { font-family: Georgia, serif; font-size: 12px; color: var(--brand-gold-bright); letter-spacing: 0.15em; }
+.role-chip .me { font-size: 11px; color: var(--chrome-text); }
+.role-chip .role-meta { font-size: 9px; color: var(--brand-gold); letter-spacing: 0.15em; }
+
+.clock { text-align: right; font-family: Georgia, serif; }
+.clock .time { font-size: 20px; color: var(--chrome-text); letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+.clock .date { font-size: 10px; color: var(--brand-gold); letter-spacing: 0.12em; margin-top: 2px; }
+
+/* ===================================================================
+   STATUS STRIP (enhanced per manager feedback)
+   - Sparkline alongside dollar at risk
+   - AI framing "handled X of Y"
+   - Plant-by-plant dot strip
+   - Top three keyboard shortcuts exposed
+   =================================================================== */
+.status-strip {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto 1fr auto auto;
+  gap: 22px;
+  padding: 10px 22px;
+  background: var(--chrome-panel);
+  border-bottom: 1px solid var(--chrome-border);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #A8906A;
+  align-items: center;
+}
+.status-strip .stat { display: flex; align-items: center; gap: 7px; }
+.status-strip .stat strong { color: var(--chrome-text); font-family: Georgia, serif; font-size: 14px; }
+.status-strip .stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-strip .stat.good .dot { background: #8FAA6A; box-shadow: 0 0 6px #8FAA6A; }
+.status-strip .stat.warn .dot { background: var(--s-warn); box-shadow: 0 0 6px var(--s-warn); }
+.status-strip .stat.bad .dot { background: var(--s-bad); box-shadow: 0 0 6px var(--s-bad); }
+.status-strip .stat.ai .dot { background: var(--ai-soft); box-shadow: 0 0 6px var(--ai-soft); }
+
+/* Sparkline inline next to dollar at risk */
+.spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; margin-left: 3px; }
+.spark span { width: 3px; background: var(--s-bad); border-radius: 1px; opacity: 0.7; }
+.spark span.peak { background: var(--brand-gold); opacity: 1; }
+
+/* Plant-by-plant mini strip */
+.plant-strip { display: flex; align-items: center; gap: 12px; padding: 0 16px; border-left: 1px solid var(--chrome-border); border-right: 1px solid var(--chrome-border); }
+.plant-strip .plabel { font-size: 9px; letter-spacing: 0.2em; color: #8A7856; }
+.plant-dot { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.plant-dot .pd-name { font-size: 9px; color: #8A7856; letter-spacing: 0.12em; }
+.plant-dot .pd-circle { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: rgba(0,0,0,0.5); }
+.plant-dot .pd-circle.good { background: #8FAA6A; }
+.plant-dot .pd-circle.warn { background: var(--s-warn); color: #F5F1E0; }
+.plant-dot .pd-circle.bad { background: var(--s-bad); color: #F5F1E0; animation: dotPulse 1.6s infinite; }
+@keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+.status-strip .shortcuts { display: flex; gap: 10px; align-items: center; color: #8A7856; font-size: 10px; letter-spacing: 0.12em; }
+.status-strip .shortcuts .k { display: inline-block; padding: 1px 6px; background: var(--chrome-surface); border: 1px solid var(--chrome-border); border-radius: 2px; font-family: "SF Mono", monospace; color: var(--chrome-text); margin-right: 4px; }
+.status-strip .runbook { color: var(--brand-gold); font-size: 11px; letter-spacing: 0.1em; }
+
+/* ===================================================================
+   TABS (4 main tabs + help icon)
+   =================================================================== */
+nav.tabs {
+  display: flex;
+  align-items: stretch;
+  padding: 0 14px;
+  background: var(--chrome-panel);
+  border-bottom: 1px solid var(--chrome-border);
+}
+nav.tabs label {
+  background: transparent;
+  color: #A8906A;
+  padding: 13px 22px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  min-height: 44px; /* 44px minimum touch target */
+}
+nav.tabs label:hover { color: var(--chrome-text); background: rgba(212,168,83,0.05); }
+nav.tabs label .badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 20px; padding: 0 7px;
+  border-radius: 10px; font-size: 10px; font-weight: 700;
+  background: var(--s-bad); color: #fff; letter-spacing: 0;
+}
+nav.tabs label .badge.ai { background: var(--ai); }
+nav.tabs label.help-lbl { margin-left: auto; padding: 13px 18px; font-size: 16px; color: var(--brand-gold); }
+
+section.screen { display: none; }
+#t-queue:checked ~ main #s-queue,
+#t-reports:checked ~ main #s-reports,
+#t-admin:checked ~ main #s-admin { display: block; }
+
+#t-queue:checked ~ nav.tabs label[for="t-queue"],
+#t-reports:checked ~ nav.tabs label[for="t-reports"],
+#t-admin:checked ~ nav.tabs label[for="t-admin"] {
+  color: var(--brand-gold-bright);
+  border-bottom-color: var(--brand-gold);
+  background: rgba(212,168,83,0.08);
+}
+
+/* ===================================================================
+   MAIN WORK AREA
+   =================================================================== */
+main { padding: 18px 22px 20px 22px; max-width: 1760px; margin: 0 auto; }
+h1.screen-title { font-family: Georgia, serif; font-size: 22px; color: var(--work-text); letter-spacing: 0.06em; margin-bottom: 3px; }
+.screen-sub { color: var(--work-text-muted); font-size: 12px; margin-bottom: 16px; }
+h2.section-title { font-family: Georgia, serif; font-size: 16px; color: var(--work-text); letter-spacing: 0.08em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--work-border); }
+
+.panel { background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 5px; padding: 16px; box-shadow: 0 1px 0 rgba(184,158,106,0.25); }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--work-border); }
+.panel-title { font-family: Georgia, serif; font-size: 14px; color: var(--work-text); letter-spacing: 0.12em; }
+.panel-sub { font-size: 10px; color: var(--work-text-dim); letter-spacing: 0.14em; }
+
+/* ===================================================================
+   HERO METRICS
+   =================================================================== */
+.hero-metrics { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.metric-card { background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 5px; padding: 16px 20px; box-shadow: 0 1px 0 rgba(184,158,106,0.25); }
+.metric-card.hero { background: linear-gradient(135deg, #FFFDF5 0%, #F2EBD9 100%); border-color: var(--work-border-dk); }
+.m-label { font-size: 11px; letter-spacing: 0.18em; color: var(--work-text-muted); margin-bottom: 6px; font-weight: 600; }
+.m-value { font-family: Georgia, serif; font-size: 32px; color: var(--work-text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.m-value.hero-size { font-size: 46px; }
+.m-sub { font-size: 12px; color: var(--work-text-dim); margin-top: 4px; }
+.m-value.bad { color: var(--s-bad); }
+.m-value.warn { color: var(--s-warn); }
+.m-value.good { color: var(--s-good); }
+
+.sla-chip { display: inline-block; padding: 3px 9px; border-radius: 2px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; margin-left: 6px; vertical-align: middle; }
+.sla-chip.ok { background: var(--s-good-bg); color: var(--s-good); border: 1px solid var(--s-good); }
+.sla-chip.warn { background: var(--s-warn-bg); color: var(--s-warn); border: 1px solid var(--s-warn); }
+.sla-chip.bad { background: var(--s-bad-bg); color: var(--s-bad); border: 1px solid var(--s-bad); }
+
+/* Larger inline sparkline inside hero card */
+.hero-spark { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin-top: 10px; }
+.hero-spark span { width: 8px; background: var(--s-bad); border-radius: 1px; opacity: 0.65; }
+.hero-spark span.peak { opacity: 1; background: var(--s-bad); }
+.hero-spark-label { font-size: 11px; color: var(--work-text-muted); letter-spacing: 0.1em; margin-top: 4px; }
+
+/* ===================================================================
+   AI BATCH CARD
+   =================================================================== */
+.ai-batch { background: linear-gradient(135deg, var(--ai-bg) 0%, var(--work-panel) 100%); border: 1px solid var(--ai); border-radius: 5px; padding: 18px 20px; margin-bottom: 16px; position: relative; }
+.ai-batch::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--ai), var(--brand-gold)); border-radius: 5px 5px 0 0; }
+.ai-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 10px; }
+.ai-head .ai-title { font-family: Georgia, serif; font-size: 17px; color: var(--ai); letter-spacing: 0.1em; }
+.ai-head .ai-counts { font-family: Georgia, serif; font-size: 14px; color: var(--work-text); }
+.ai-head .ai-counts strong { font-size: 22px; }
+.ai-rule { background: var(--work-surface); border: 1px dashed var(--ai); border-radius: 3px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: var(--work-text); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ai-rule .rule-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--ai); margin-right: 10px; }
+.ai-rule code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; color: var(--work-text); background: rgba(106,75,149,0.08); padding: 2px 7px; border-radius: 2px; }
+.ai-rule .edit-rule { font-size: 10px; letter-spacing: 0.15em; color: var(--ai); padding: 6px 12px; border: 1px solid var(--ai); border-radius: 2px; cursor: pointer; }
+.ai-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+.btn-primary-lg { padding: 16px 20px; background: var(--s-good); color: #FFFDF5; border-radius: 3px; font-size: 14px; letter-spacing: 0.15em; font-weight: 700; text-align: center; cursor: pointer; border: none; user-select: none; display: block; min-height: 48px; }
+.btn-primary-lg:hover { background: #2F5C34; }
+.btn-secondary-lg { padding: 16px 20px; background: var(--work-surface); color: var(--work-text); border: 1px solid var(--work-border-dk); border-radius: 3px; font-size: 13px; letter-spacing: 0.15em; font-weight: 600; text-align: center; cursor: pointer; display: block; user-select: none; min-height: 48px; }
+.btn-secondary-lg:hover { background: var(--work-panel); border-color: var(--ai); }
+
+.ai-patterns { margin-top: 14px; padding-top: 12px; border-top: 1px dotted var(--work-border); }
+.ai-patterns table { width: 100%; font-size: 12px; }
+.ai-patterns th { text-align: left; color: var(--ai); letter-spacing: 0.1em; padding: 6px 8px 6px 0; font-size: 10px; font-weight: 700; }
+.ai-patterns td { padding: 6px 8px 6px 0; color: var(--work-text); }
+
+/* ===================================================================
+   TOOLBAR / FILTER BAR
+   =================================================================== */
+.toolbar { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 5px; padding: 12px 14px; min-height: 56px; }
+.search-box { flex: 1; min-width: 220px; display: flex; align-items: center; background: var(--work-surface); border: 1px solid var(--work-border-dk); border-radius: 3px; padding: 8px 12px; gap: 8px; min-height: 40px; }
+.search-box input { flex: 1; border: none; outline: none; background: transparent; font-size: 14px; color: var(--work-text); font-family: inherit; }
+.search-box input::placeholder { color: var(--work-text-dim); }
+.search-box .icon { color: var(--work-text-muted); font-size: 14px; }
+
+.filter-chip {
+  background: var(--work-surface);
+  color: var(--work-text-muted);
+  border: 1px solid var(--work-border-dk);
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+.filter-chip:hover { border-color: var(--ai); color: var(--work-text); }
+.filter-chip.active { background: var(--brand-gold); color: var(--chrome-deep); border-color: var(--brand-gold); }
+.filter-chip.near-me { background: var(--ai); color: #FFFDF5; border-color: var(--ai); }
+.filter-chip.near-me::before { content: '\1F4CD '; margin-right: 4px; }
+.filter-sep { width: 1px; height: 22px; background: var(--work-border); }
+.filter-label { font-size: 10px; color: var(--work-text-dim); letter-spacing: 0.15em; font-weight: 600; padding: 0 4px; }
+
+.scan-btn {
+  padding: 8px 16px;
+  background: var(--chrome-deep);
+  color: var(--brand-gold-bright);
+  border: 1px solid var(--brand-gold);
+  border-radius: 2px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.scan-btn:hover { background: var(--brand-gold); color: var(--chrome-deep); }
+
+/* ===================================================================
+   ANOMALY CARDS - RECOMMENDATION FIRST
+   Per end user feedback: operator reads recommended action first.
+   =================================================================== */
+details.anomaly-item {
+  background: var(--work-panel);
+  border: 1px solid var(--work-border);
+  border-left: 4px solid var(--work-border-dk);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  transition: border-color 0.15s;
+}
+details.anomaly-item[open] { border-left-color: var(--ai); background: var(--work-surface); box-shadow: 0 2px 8px rgba(58,42,21,0.08); }
+details.anomaly-item.crit { border-left-color: var(--s-bad); }
+details.anomaly-item.high { border-left-color: var(--s-warn); }
+details.anomaly-item.med { border-left-color: var(--brand-gold); }
+details.anomaly-item.low { border-left-color: var(--s-good); }
+
+/* Summary row is recommendation-led with compact metadata below */
+summary.anomaly-summary {
+  display: grid;
+  grid-template-columns: 26px 86px 2.4fr 1.1fr 1fr 110px 48px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  min-height: 64px; /* UP from 48 for touch */
+}
+summary.anomaly-summary::-webkit-details-marker { display: none; }
+summary.anomaly-summary::before {
+  content: '\25B8';
+  color: var(--work-text-dim);
+  font-size: 14px;
+  transition: transform 0.2s;
+  width: 14px;
+}
+details[open] > summary.anomaly-summary::before { transform: rotate(90deg); color: var(--ai); }
+
+/* Recommendation leads, anomaly description follows as subtext */
+.rec-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.rec-lead .rec-action {
+  font-family: Georgia, serif;
+  font-size: 15px;
+  color: var(--work-text);
+  line-height: 1.3;
+}
+.rec-lead .rec-action strong {
+  color: var(--ai);
+  font-weight: 700;
+}
+.rec-lead .rec-context {
+  font-size: 12px;
+  color: var(--work-text-muted);
+  letter-spacing: 0.04em;
+}
+.rec-lead .rec-context .sep { color: var(--work-border-dk); margin: 0 5px; }
+
+.sev-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+  padding: 4px 10px; border-radius: 2px; text-align: center;
+  border: 1px solid; min-width: 76px;
+}
+.sev-tag.crit { background: var(--s-bad-bg); color: var(--s-bad); border-color: var(--s-bad); }
+.sev-tag.high { background: var(--s-warn-bg); color: var(--s-warn); border-color: var(--s-warn); }
+.sev-tag.med { background: #F6EED4; color: #886717; border-color: var(--brand-gold); }
+.sev-tag.low { background: var(--s-good-bg); color: var(--s-good); border-color: var(--s-good); }
+
+.anomaly-id { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--work-text-muted); }
+.anomaly-facility { font-size: 12px; color: var(--work-text); font-weight: 600; letter-spacing: 0.1em; }
+.anomaly-facility .near { display: inline-block; margin-left: 6px; padding: 2px 6px; background: var(--ai-bg); color: var(--ai); font-size: 9px; letter-spacing: 0.15em; border-radius: 2px; }
+.anomaly-qty { font-family: Georgia, serif; color: var(--work-text); font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; }
+.anomaly-qty .plus { color: var(--s-bad); }
+.anomaly-qty .minus { color: var(--s-warn); }
+.anomaly-qty .sub { display: block; font-size: 10.5px; color: var(--work-text-dim); letter-spacing: 0; font-family: -apple-system, sans-serif; margin-top: 2px; }
+
+.anomaly-ai { font-size: 12px; color: var(--work-text); display: flex; align-items: center; gap: 10px; }
+.anomaly-ai .conf { display: inline-block; min-width: 40px; font-weight: 700; color: var(--ai); font-family: Georgia, serif; font-size: 16px; }
+.anomaly-ai .rec { color: var(--work-text-muted); font-size: 11px; letter-spacing: 0.1em; }
+.anomaly-age { font-size: 11px; color: var(--work-text-muted); text-align: right; }
+.anomaly-age .age-big { font-family: Georgia, serif; font-size: 15px; color: var(--work-text); display: block; font-variant-numeric: tabular-nums; }
+
+/* Quick approve button on collapsed row - 48px primary action */
+.quick-approve {
+  width: 48px; height: 48px;
+  background: var(--s-good);
+  color: #FFFDF5;
+  border: none; border-radius: 3px;
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+}
+.quick-approve:hover { background: #2F5C34; }
+
+/* Expanded detail block */
+.anomaly-detail { padding: 16px 20px 18px 20px; border-top: 1px solid var(--work-border); background: var(--work-surface); }
+.sync-view { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; margin-bottom: 14px; align-items: stretch; }
+.sys-box { background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 4px; padding: 14px; }
+.sys-box.erp { border-left: 3px solid #3F6A85; }
+.sys-box.wms { border-left: 3px solid var(--brand-gold); }
+.sys-box .sys-name { font-family: Georgia, serif; font-size: 11px; letter-spacing: 0.2em; color: var(--work-text-muted); font-weight: 700; margin-bottom: 6px; }
+.sys-box .sys-qty { font-family: Georgia, serif; font-size: 30px; color: var(--work-text); line-height: 1; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+.sys-box .sys-meta { font-size: 11px; color: var(--work-text-dim); letter-spacing: 0.08em; margin-bottom: 8px; }
+.sys-box .sys-note { font-size: 12px; color: var(--work-text); line-height: 1.5; border-top: 1px dotted var(--work-border); padding-top: 8px; }
+.sync-divider { display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-size: 28px; color: var(--s-bad); }
+
+.detail-cols { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+
+.ai-rec-box { background: var(--ai-bg); border: 1px solid var(--ai); border-radius: 4px; padding: 16px; }
+.ai-rec-box .ai-rec-label { font-size: 10px; letter-spacing: 0.2em; color: var(--ai); font-weight: 700; margin-bottom: 6px; }
+.ai-rec-box .ai-rec-text { font-family: Georgia, serif; font-size: 16px; color: var(--work-text); line-height: 1.4; margin-bottom: 10px; }
+.ai-rec-box .ai-conf-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ai-conf-num { font-family: Georgia, serif; font-size: 22px; color: var(--ai); font-weight: 600; }
+.ai-conf-track { flex: 1; height: 8px; background: rgba(106,75,149,0.12); border-radius: 4px; overflow: hidden; }
+.ai-conf-fill { height: 100%; background: linear-gradient(90deg, var(--ai), var(--brand-gold)); border-radius: 4px; }
+.ai-conf-label { font-size: 11px; letter-spacing: 0.12em; color: var(--ai); font-weight: 600; }
+.ai-reasoning { background: var(--work-surface); border-radius: 3px; padding: 10px 12px; margin-bottom: 12px; }
+.ai-reasoning-label { font-size: 10px; letter-spacing: 0.15em; color: var(--ai); font-weight: 700; margin-bottom: 6px; }
+.ai-reasoning ul { list-style: none; }
+.ai-reasoning li { font-size: 12.5px; color: var(--work-text); padding: 3px 0 3px 14px; position: relative; line-height: 1.45; }
+.ai-reasoning li::before { content: '\25C6'; color: var(--ai); position: absolute; left: 0; top: 6px; font-size: 7px; }
+
+.proposed-steps { background: var(--work-surface); border-left: 3px solid var(--ai); padding: 10px 14px; border-radius: 3px; margin-bottom: 14px; }
+.proposed-steps-label { font-size: 10px; letter-spacing: 0.15em; color: var(--ai); font-weight: 700; margin-bottom: 6px; }
+.proposed-steps ol { padding-left: 20px; font-size: 12.5px; color: var(--work-text); line-height: 1.7; }
+
+/* HITL actions - now 4 visible buttons plus kebab per warehouse worker + end user feedback */
+.hitl-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 48px;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-approve, .btn-snooze, .btn-escalate {
+  padding: 14px 14px;
+  border-radius: 3px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  display: block;
+  border: none;
+  min-height: 48px;
+}
+.btn-approve { background: var(--s-good); color: #FFFDF5; }
+.btn-approve:hover { background: #2F5C34; }
+.btn-snooze { background: var(--work-surface); color: var(--work-text); border: 1px solid var(--work-border-dk); font-weight: 600; }
+.btn-snooze:hover { background: var(--work-panel); border-color: var(--brand-gold); color: var(--work-text); }
+.btn-escalate { background: var(--ai-bg); color: var(--ai); border: 1px solid var(--ai); font-weight: 600; }
+.btn-escalate:hover { background: #DFD0ED; }
+
+/* Voice confirm hint under approve button */
+.voice-hint {
+  grid-column: 1 / 2;
+  font-size: 10px;
+  color: var(--work-text-dim);
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin-top: 4px;
+  font-style: italic;
+}
+.voice-hint .mic { color: var(--s-good); }
+
+details.kebab { position: relative; }
+details.kebab > summary {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; padding: 10px;
+  background: var(--work-surface); border: 1px solid var(--work-border-dk);
+  border-radius: 3px; cursor: pointer; list-style: none;
+  font-size: 20px; color: var(--work-text-muted); user-select: none;
+  min-height: 48px;
+}
+details.kebab > summary::-webkit-details-marker { display: none; }
+details.kebab > summary::after { content: '\22EE'; letter-spacing: 2px; }
+details.kebab[open] > summary { background: var(--work-panel); border-color: var(--ai); color: var(--ai); }
+.kebab-menu { position: absolute; right: 0; top: calc(100% + 4px); background: var(--work-surface); border: 1px solid var(--work-border-dk); border-radius: 3px; box-shadow: 0 4px 14px rgba(58,42,21,0.15); min-width: 220px; padding: 4px 0; z-index: 10; }
+.kebab-menu .kbi { display: block; padding: 10px 14px; font-size: 12px; color: var(--work-text); letter-spacing: 0.1em; cursor: pointer; user-select: none; }
+.kebab-menu .kbi:hover { background: var(--work-panel); color: var(--ai); }
+.kebab-menu .kbi.danger:hover { background: var(--s-bad-bg); color: var(--s-bad); }
+.kebab-menu .kb-sep { height: 1px; background: var(--work-border); margin: 4px 0; }
+
+/* Snooze popover (visual only) */
+.snooze-options {
+  background: var(--work-surface);
+  border: 1px solid var(--work-border);
+  border-radius: 3px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--work-text-muted);
+}
+.snooze-options .so-label { font-size: 10px; letter-spacing: 0.2em; color: var(--work-text-dim); font-weight: 700; margin-bottom: 6px; }
+.snooze-options .so-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.snooze-options .so-chip { padding: 6px 12px; background: var(--work-panel); border: 1px solid var(--work-border-dk); border-radius: 2px; font-size: 11px; cursor: pointer; letter-spacing: 0.1em; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 26px; margin-top: 12px; padding-top: 6px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--work-border); }
+.tl-item { position: relative; margin-bottom: 10px; }
+.tl-item::before { content: ''; position: absolute; left: -22px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--work-text-dim); border: 2px solid var(--work-surface); }
+.tl-item.evt-erp::before { background: #3F6A85; }
+.tl-item.evt-wms::before { background: var(--brand-gold); }
+.tl-item.evt-warn::before { background: var(--s-warn); }
+.tl-item.evt-bad::before { background: var(--s-bad); }
+.tl-item.evt-sync::before { background: var(--ai); }
+.tl-time { font-size: 11px; color: var(--work-text-muted); letter-spacing: 0.08em; font-weight: 600; }
+.tl-text { font-size: 12.5px; color: var(--work-text); line-height: 1.4; }
+
+/* ===================================================================
+   TABLES
+   =================================================================== */
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data thead tr { border-bottom: 1px solid var(--work-border-dk); color: var(--work-text-muted); text-align: left; letter-spacing: 0.1em; font-size: 11px; }
+table.data th { padding: 10px 6px; font-weight: 700; }
+table.data td { padding: 12px 6px; color: var(--work-text); border-bottom: 1px solid var(--work-border); }
+table.data td.num { text-align: right; font-family: Georgia, serif; font-variant-numeric: tabular-nums; }
+table.data td.mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--work-text-muted); }
+
+.pill { display: inline-block; padding: 3px 9px; border-radius: 2px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; border: 1px solid; }
+.pill.good { background: var(--s-good-bg); color: var(--s-good); border-color: var(--s-good); }
+.pill.warn { background: var(--s-warn-bg); color: var(--s-warn); border-color: var(--s-warn); }
+.pill.bad { background: var(--s-bad-bg); color: var(--s-bad); border-color: var(--s-bad); }
+.pill.ai { background: var(--ai-bg); color: var(--ai); border-color: var(--ai); }
+.pill.info { background: #DDE8EE; color: #3F6A85; border-color: #3F6A85; }
+.pill.neutral { background: var(--work-surface); color: var(--work-text-muted); border-color: var(--work-border-dk); }
+
+/* ===================================================================
+   REPORTS TAB
+   =================================================================== */
+.period-toggle { display: flex; gap: 6px; padding: 8px; background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 5px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
+.period-toggle label { padding: 10px 24px; font-size: 12px; letter-spacing: 0.15em; font-weight: 700; background: var(--work-surface); color: var(--work-text-muted); border: 1px solid var(--work-border-dk); border-radius: 3px; cursor: pointer; user-select: none; transition: all 0.1s; min-height: 40px; display: inline-flex; align-items: center; }
+.period-toggle label:hover { border-color: var(--ai); color: var(--work-text); }
+.period-toggle .pt-label { border: none; padding: 10px 14px 10px 6px; font-size: 10px; letter-spacing: 0.2em; color: var(--work-text-dim); font-weight: 600; cursor: default; background: transparent; }
+.period-toggle .pt-sep { flex: 1; }
+.period-toggle .export-btn { background: var(--work-surface); color: var(--work-text-muted); border: 1px solid var(--work-border-dk); padding: 10px 16px; font-size: 11px; letter-spacing: 0.15em; font-weight: 600; border-radius: 3px; cursor: pointer; user-select: none; min-height: 40px; }
+.period-toggle .export-btn:hover { border-color: var(--ai); color: var(--ai); }
+
+#p-day:checked ~ main label[for="p-day"],
+#p-week:checked ~ main label[for="p-week"],
+#p-month:checked ~ main label[for="p-month"],
+#p-quarter:checked ~ main label[for="p-quarter"],
+#p-year:checked ~ main label[for="p-year"] { background: var(--brand-gold); color: var(--chrome-deep); border-color: var(--brand-gold); box-shadow: 0 1px 3px rgba(184,158,106,0.3); }
+
+.period-panel { display: none; }
+#p-day:checked ~ main .period-panel[data-period="day"],
+#p-week:checked ~ main .period-panel[data-period="week"],
+#p-month:checked ~ main .period-panel[data-period="month"],
+#p-quarter:checked ~ main .period-panel[data-period="quarter"],
+#p-year:checked ~ main .period-panel[data-period="year"] { display: block; }
+
+/* WHAT CHANGED annotation band - per manager feedback */
+.changed-band {
+  background: linear-gradient(90deg, var(--ai-bg), var(--work-panel));
+  border: 1px solid var(--ai);
+  border-left: 4px solid var(--ai);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  font-size: 12px;
+}
+.changed-band .cb-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--ai);
+  font-weight: 700;
+  padding: 4px 10px;
+  background: var(--work-surface);
+  border: 1px solid var(--ai);
+  border-radius: 2px;
+}
+.changed-band .cb-items {
+  color: var(--work-text);
+  line-height: 1.5;
+}
+.changed-band .cb-items strong {
+  color: var(--ai);
+  background: rgba(106,75,149,0.08);
+  padding: 2px 5px;
+  border-radius: 2px;
+  margin: 0 2px;
+  font-weight: 700;
+}
+.changed-band .cb-since {
+  font-size: 11px;
+  color: var(--work-text-muted);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.score-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.score-card { background: var(--work-panel); border: 1px solid var(--work-border); border-top: 3px solid var(--brand-gold); border-radius: 5px; padding: 16px 18px; box-shadow: 0 1px 0 rgba(184,158,106,0.2); }
+.score-card.good { border-top-color: var(--s-good); }
+.score-card.warn { border-top-color: var(--s-warn); }
+.score-card.bad { border-top-color: var(--s-bad); }
+.sc-name { font-family: Georgia, serif; font-size: 12px; color: var(--work-text-muted); letter-spacing: 0.14em; font-weight: 700; margin-bottom: 4px; }
+.sc-sub { font-size: 10px; color: var(--work-text-dim); letter-spacing: 0.15em; margin-bottom: 10px; }
+.sc-big { font-family: Georgia, serif; font-size: 30px; color: var(--work-text); line-height: 1; font-variant-numeric: tabular-nums; }
+.sc-big .unit { font-size: 14px; color: var(--work-text-muted); margin-left: 3px; }
+.sc-delta { font-size: 11px; color: var(--work-text-muted); margin-top: 6px; }
+.sc-delta .arr { font-family: Georgia, serif; margin-right: 4px; }
+.sc-delta.good { color: var(--s-good); }
+.sc-delta.warn { color: var(--s-warn); }
+.sc-delta.bad { color: var(--s-bad); }
+.sc-bar { height: 6px; background: var(--work-surface); border-radius: 3px; overflow: hidden; position: relative; margin-top: 8px; border: 1px solid var(--work-border); }
+.sc-bar .fill { height: 100%; border-radius: 2px; }
+.sc-bar .fill.good { background: var(--s-good); }
+.sc-bar .fill.warn { background: var(--s-warn); }
+.sc-bar .fill.bad { background: var(--s-bad); }
+.sc-bar .target { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--work-text); }
+
+.waterfall { display: grid; gap: 8px; align-items: end; height: 180px; padding: 8px 0; }
+.wf-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.wf-bar { width: 82%; border-radius: 3px 3px 0 0; margin-bottom: 4px; min-height: 2px; transition: opacity 0.2s; }
+.wf-bar.good { background: var(--s-good); }
+.wf-bar.warn { background: var(--s-warn); }
+.wf-bar.bad { background: var(--s-bad); }
+.wf-bar.proj { background: var(--work-text-dim); opacity: 0.5; }
+.wf-label { font-size: 10px; color: var(--work-text-muted); letter-spacing: 0.06em; margin-top: 3px; }
+.wf-val { font-family: Georgia, serif; font-size: 11px; color: var(--work-text); font-variant-numeric: tabular-nums; }
+
+.heatmap { display: grid; gap: 3px; }
+.hm-cell { aspect-ratio: 2.1 / 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: Georgia, serif; color: var(--work-text); border-radius: 2px; font-variant-numeric: tabular-nums; }
+.hm-label { font-size: 10px; color: var(--work-text-muted); letter-spacing: 0.1em; display: flex; align-items: center; padding-right: 8px; font-weight: 600; }
+.hm-cell.h0 { background: rgba(62,113,66,0.18); color: var(--s-good); }
+.hm-cell.h1 { background: rgba(62,113,66,0.35); color: var(--s-good); }
+.hm-cell.h2 { background: rgba(200,160,96,0.40); }
+.hm-cell.h3 { background: rgba(158,94,15,0.50); color: var(--work-text); }
+.hm-cell.h4 { background: rgba(176,69,40,0.60); color: #FFFDF5; }
+.hm-cell.h5 { background: var(--s-bad); color: #FFFDF5; font-weight: 700; }
+
+.reason-row { display: grid; grid-template-columns: 240px 1fr 60px; gap: 12px; align-items: center; margin-bottom: 6px; padding: 2px 0; }
+.reason-label { font-size: 12.5px; color: var(--work-text); }
+.reason-bar { height: 22px; background: var(--work-surface); border-radius: 3px; overflow: hidden; position: relative; border: 1px solid var(--work-border); }
+.rb-fill { height: 100%; display: flex; align-items: center; padding: 0 10px; font-size: 10px; color: #FFFDF5; font-weight: 700; letter-spacing: 0.05em; }
+.rb-fill.bad { background: var(--s-bad); }
+.rb-fill.warn { background: var(--s-warn); }
+.rb-fill.gold { background: var(--brand-gold); color: var(--chrome-deep); }
+.rb-fill.ai { background: var(--ai); }
+.rb-fill.neutral { background: var(--work-text-dim); }
+.reason-num { font-family: Georgia, serif; font-size: 15px; color: var(--work-text); text-align: right; font-variant-numeric: tabular-nums; }
+
+.fixes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.fix-card { background: var(--work-surface); border: 1px solid var(--work-border); border-left: 3px solid var(--ai); border-radius: 4px; padding: 14px 16px; }
+.fix-card.target-card { border-left-color: var(--s-good); background: var(--s-good-bg); }
+.fix-card .fc-head { font-size: 10px; letter-spacing: 0.18em; color: var(--ai); font-weight: 700; margin-bottom: 6px; }
+.fix-card.target-card .fc-head { color: var(--s-good); }
+.fix-card .fc-title { font-family: Georgia, serif; font-size: 14px; color: var(--work-text); margin-bottom: 8px; line-height: 1.3; }
+.fix-card .fc-big { font-family: Georgia, serif; font-size: 28px; color: var(--s-good); margin-bottom: 8px; }
+.fix-card .fc-sub { font-size: 12px; color: var(--work-text-muted); line-height: 1.45; }
+
+/* ===================================================================
+   ADMIN TAB SUBNAV
+   =================================================================== */
+.subnav { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--work-border); }
+.subnav label { padding: 12px 20px; font-size: 12px; letter-spacing: 0.15em; font-weight: 600; color: var(--work-text-muted); cursor: pointer; border-bottom: 3px solid transparent; user-select: none; min-height: 44px; display: inline-flex; align-items: center; }
+.subnav label:hover { color: var(--work-text); }
+
+.admin-sub { display: none; }
+#adm-integrations:checked ~ main #adm-pane-integrations,
+#adm-audit:checked ~ main #adm-pane-audit,
+#adm-rules:checked ~ main #adm-pane-rules { display: block; }
+#adm-integrations:checked ~ main label[for="adm-integrations"],
+#adm-audit:checked ~ main label[for="adm-audit"],
+#adm-rules:checked ~ main label[for="adm-rules"] { color: var(--work-text); border-bottom-color: var(--ai); }
+
+.integ-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 14px; }
+.flow-diagram { background: linear-gradient(135deg, var(--work-surface) 0%, var(--work-panel) 100%); border: 1px solid var(--work-border); border-radius: 5px; padding: 18px; position: relative; overflow: hidden; min-height: 280px; }
+.health-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.hb { background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 4px; padding: 12px 14px; border-left: 3px solid var(--s-good); }
+.hb.warn { border-left-color: var(--s-warn); }
+.hb.bad { border-left-color: var(--s-bad); }
+.hb .hb-l { font-size: 10px; letter-spacing: 0.15em; color: var(--work-text-muted); font-weight: 700; margin-bottom: 4px; }
+.hb .hb-v { font-family: Georgia, serif; font-size: 22px; color: var(--work-text); line-height: 1; font-variant-numeric: tabular-nums; }
+.hb .hb-s { font-size: 11px; color: var(--work-text-dim); margin-top: 4px; letter-spacing: 0.08em; }
+
+.audit-item { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; padding: 12px; background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 3px; margin-bottom: 5px; align-items: center; min-height: 48px; }
+.audit-time { font-family: Georgia, serif; font-size: 11px; color: var(--work-text-muted); letter-spacing: 0.05em; }
+.audit-user { font-size: 10px; color: var(--work-text-dim); letter-spacing: 0.1em; }
+.audit-text { font-size: 12.5px; color: var(--work-text); }
+.audit-text strong { color: var(--work-text); font-weight: 700; }
+
+.rule-block { background: var(--work-panel); border: 1px solid var(--work-border); border-radius: 5px; padding: 16px; margin-bottom: 12px; }
+.rule-block .rule-name { font-family: Georgia, serif; font-size: 14px; color: var(--work-text); margin-bottom: 6px; }
+.rule-block .rule-expr { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; color: var(--ai); background: var(--work-surface); padding: 10px 14px; border-radius: 3px; border: 1px dashed var(--ai); margin-bottom: 10px; line-height: 1.5; }
+.rule-block .rule-meta { display: flex; gap: 16px; align-items: center; font-size: 11px; color: var(--work-text-muted); }
+.rule-block .rule-actions { display: flex; gap: 6px; }
+.rule-btn { padding: 8px 14px; font-size: 11px; letter-spacing: 0.12em; font-weight: 600; border-radius: 2px; cursor: pointer; user-select: none; min-height: 36px; }
+.rule-btn.edit { background: var(--ai-bg); color: var(--ai); border: 1px solid var(--ai); }
+.rule-btn.test { background: var(--work-surface); color: var(--work-text-muted); border: 1px solid var(--work-border-dk); }
+
+/* ===================================================================
+   HELP OVERLAY
+   =================================================================== */
+.help-overlay { position: fixed; inset: 0; background: rgba(45,32,21,0.85); z-index: 100; display: none; align-items: center; justify-content: center; padding: 30px; }
+#h-show:checked ~ .help-overlay { display: flex; }
+.help-panel { background: var(--work-panel); border: 1px solid var(--work-border-dk); border-radius: 8px; max-width: 720px; width: 100%; padding: 28px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+.help-title { font-family: Georgia, serif; font-size: 20px; color: var(--work-text); letter-spacing: 0.08em; margin-bottom: 4px; }
+.help-sub { font-size: 12px; color: var(--work-text-muted); margin-bottom: 18px; }
+.help-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; margin-bottom: 18px; }
+.help-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px dotted var(--work-border); font-size: 12.5px; color: var(--work-text); }
+.key { display: inline-block; padding: 4px 9px; background: var(--work-surface); border: 1px solid var(--work-border-dk); border-radius: 3px; font-family: "SF Mono", monospace; font-size: 11px; color: var(--work-text); min-width: 24px; text-align: center; font-weight: 600; }
+.help-close { margin-top: 10px; padding: 12px 20px; background: var(--s-good); color: #FFFDF5; border-radius: 3px; font-size: 13px; letter-spacing: 0.15em; font-weight: 700; text-align: center; cursor: pointer; user-select: none; display: inline-block; min-height: 44px; }
+
+/* ===================================================================
+   LIVE FEED (footer ticker)
+   =================================================================== */
+footer.live-feed {
+  background: linear-gradient(90deg, var(--chrome-panel), var(--chrome-surface), var(--chrome-panel));
+  border-top: 1px solid var(--chrome-border-md);
+  padding: 10px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  overflow: hidden;
+  font-size: 11px;
+  color: #A8906A;
+  z-index: 50;
+}
+.live-badge { background: var(--s-bad); color: #FFFDF5; padding: 4px 10px; border-radius: 2px; font-size: 10px; letter-spacing: 0.15em; font-weight: 700; flex-shrink: 0; animation: ticker-pulse 2s infinite; }
+@keyframes ticker-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.ticker { color: #A8906A; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; }
+.ticker .ts { color: var(--brand-gold); margin-right: 8px; }
+.ticker .tag { color: #7FA4B8; margin-right: 6px; }
+
+/* Small utilities */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-12-10 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+.mt-10 { margin-top: 10px; }
+.small { font-size: 11px; color: var(--work-text-muted); }
+
+.ornament { text-align: center; color: var(--brand-gold); letter-spacing: 0.4em; font-size: 9px; margin: 18px 0 10px 0; opacity: 0.7; }
+
+/* Version tag in footer */
+.version-tag { font-size: 10px; color: var(--chrome-text-muted); letter-spacing: 0.2em; }
+.version-tag strong { color: var(--brand-gold); }
+
+</style>
+
+<style id="cio-theme">:root{--bg-deep:#0A2540;--bg-panel:#0E2C49;--bg-surface:#123A5C;--bg-surface-lt:#17436A;--border:rgba(231,207,142,.16);--border-lt:rgba(231,207,142,.26);--text:#F4F7FA;--text-muted:#C7D3DF;--text-dim:#9FB1C2;--accent-gold:#A9832C;--accent-gold-bright:#C8A24B;--accent-cream:#E7CF8E;}</style>
+</head>
+<body>
+
+<!-- =================================================================== -->
+<!-- HIDDEN RADIOS / CHECKBOXES -->
+<!-- =================================================================== -->
+<input type="radio" name="tab" id="t-queue" class="tab-radio" checked>
+<input type="radio" name="tab" id="t-reports" class="tab-radio">
+<input type="radio" name="tab" id="t-admin" class="tab-radio">
+
+<input type="radio" name="period" id="p-day" class="period-radio" checked>
+<input type="radio" name="period" id="p-week" class="period-radio">
+<input type="radio" name="period" id="p-month" class="period-radio">
+<input type="radio" name="period" id="p-quarter" class="period-radio">
+<input type="radio" name="period" id="p-year" class="period-radio">
+
+<input type="radio" name="adm" id="adm-integrations" class="tab-radio" checked>
+<input type="radio" name="adm" id="adm-audit" class="tab-radio">
+<input type="radio" name="adm" id="adm-rules" class="tab-radio">
+
+<input type="checkbox" id="h-show" class="help-toggle">
+
+<!-- =================================================================== -->
+<!-- HEADER -->
+<!-- =================================================================== -->
+<header class="topbar">
+  <a href="index.html" aria-label="Back to resume home" style="display:contents;text-decoration:none;color:inherit;cursor:pointer">
+  <div class="brand">
+    <div class="name">Chris Clark</div>
+    <div class="tag">PORTFOLIO</div>
+  </div>
+  </a>
+  <div class="title-block">
+    <div class="title"><span class="diamond">&#x25C6;</span>DAIRY INVENTORY TRACKER</div>
+    <div class="sub">Oracle Fusion ERP &harr; Oracle WMS &middot; Reconciliation Control</div>
+  </div>
+  <span class="env-pill">PROD</span>
+  <!-- Role chip leads with SCOPE then name (end user feedback) -->
+  <div class="role-chip">
+    <div class="scope">DEWITT SHIFT A</div>
+    <div class="me">Operator</div>
+    <div class="role-meta">OPERATOR &middot; DSW OWNERSHIP</div>
+  </div>
+  <div class="clock">
+    <div class="time">07:14:08</div>
+    <div class="date">APR 07, 2026</div>
+  </div>
+</header>
+
+<!-- =================================================================== -->
+<!-- STATUS STRIP (enhanced per manager feedback) -->
+<!-- =================================================================== -->
+<div class="status-strip">
+  <div class="stat good"><span class="dot"></span>LAST SYNC <strong>14m ago</strong></div>
+  <div class="stat warn"><span class="dot"></span>QUEUE <strong>102</strong> OPEN</div>
+  <div class="stat warn"><span class="dot"></span>OLDEST <strong>14m</strong> SLA 30m</div>
+  <div class="stat bad">
+    <span class="dot"></span>
+    $ AT RISK <strong>$347,852</strong>
+    <!-- 24h sparkline: yesterday same-time baseline -->
+    <span class="spark" title="24-hour trend">
+      <span style="height: 28%"></span>
+      <span style="height: 42%"></span>
+      <span style="height: 55%"></span>
+      <span style="height: 48%"></span>
+      <span style="height: 62%"></span>
+      <span style="height: 70%"></span>
+      <span style="height: 78%"></span>
+      <span class="peak" style="height: 95%"></span>
+      <span style="height: 88%"></span>
+    </span>
+  </div>
+  <div class="stat ai">
+    <span class="dot"></span>
+    AI HANDLED <strong>24 of 126</strong> TODAY
+  </div>
+  <!-- Plant-by-plant dots per manager feedback -->
+  <div class="plant-strip">
+    <span class="plabel">PLANTS</span>
+    <div class="plant-dot" title="DeWitt - 2 open"><div class="pd-circle warn">2</div><div class="pd-name">DW</div></div>
+    <div class="plant-dot" title="Cortlandville - 1 open"><div class="pd-circle good">0</div><div class="pd-name">CV</div></div>
+    <div class="plant-dot" title="BCV - 3 open"><div class="pd-circle warn">3</div><div class="pd-name">BCV</div></div>
+    <div class="plant-dot" title="DSW - 7 open, 1 critical"><div class="pd-circle bad">7</div><div class="pd-name">DSW</div></div>
+    <div class="plant-dot" title="ICC - 1 open"><div class="pd-circle good">1</div><div class="pd-name">ICC</div></div>
+    <div class="plant-dot" title="WRF - 0 open"><div class="pd-circle good">0</div><div class="pd-name">WRF</div></div>
+    <div class="plant-dot" title="SCS - 0 open"><div class="pd-circle good">0</div><div class="pd-name">SCS</div></div>
+  </div>
+  <!-- Top 3 keyboard shortcuts surfaced per UI designer feedback -->
+  <div class="shortcuts">
+    <span><span class="k">J</span>next</span>
+    <span><span class="k">A</span>approve</span>
+    <span><span class="k">/</span>search</span>
+  </div>
+  <a href="#" class="runbook">RUNBOOK &rarr;</a>
+</div>
+
+<!-- =================================================================== -->
+<!-- TABS -->
+<!-- =================================================================== -->
+<nav class="tabs">
+  <label for="t-queue">&#x25CE; MY QUEUE <span class="badge">7</span></label>
+  <label for="t-reports">&#x25A4; REPORTS</label>
+  <label for="t-admin">&#x2699; ADMIN</label>
+  <label class="help-lbl" for="h-show">?</label>
+</nav>
+
+<main>
+
+<!-- =================================================================== -->
+<!-- QUEUE SECTION -->
+<!-- =================================================================== -->
+<section id="s-queue" class="screen">
+
+  <h1 class="screen-title"><span class="diamond">&#x25C6;</span>My Reconciliation Queue</h1>
+  <div class="screen-sub">Good morning. 7 items need your review. 24 have been resolved by AI this hour. Triage in the order the queue presents them.</div>
+
+  <!-- Hero metrics: lead with dollar at risk, include sparkline -->
+  <div class="hero-metrics">
+    <div class="metric-card hero">
+      <div class="m-label">DOLLARS AT RISK</div>
+      <div class="m-value hero-size bad">$347,852</div>
+      <div class="m-sub">Across 102 open items. 64% in DSW facility. Target resolution by EOD.</div>
+      <div class="hero-spark">
+        <span style="height: 28%"></span>
+        <span style="height: 42%"></span>
+        <span style="height: 55%"></span>
+        <span style="height: 48%"></span>
+        <span style="height: 62%"></span>
+        <span style="height: 70%"></span>
+        <span style="height: 78%"></span>
+        <span class="peak" style="height: 95%"></span>
+        <span style="height: 88%"></span>
+        <span style="height: 82%"></span>
+        <span style="height: 76%"></span>
+        <span style="height: 88%"></span>
+      </div>
+      <div class="hero-spark-label">24-HOUR TREND &middot; YESTERDAY 07:00 VS TODAY 07:00 +24%</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">OLDEST OPEN</div>
+      <div class="m-value warn">14m <span class="sla-chip warn">SLA 30m</span></div>
+      <div class="m-sub">Confidence 94%. In queue 12 min.</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">MY LOAD</div>
+      <div class="m-value">7</div>
+      <div class="m-sub">2 high &middot; 3 medium &middot; 2 low</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">CLOSED TODAY</div>
+      <div class="m-value good">9 <span class="small">/ 24 total</span></div>
+      <div class="m-sub">$488 variance absorbed &middot; 100% posted</div>
+    </div>
+  </div>
+
+  <!-- AI Batch with exposed rule -->
+  <div class="ai-batch">
+    <div class="ai-head">
+      <div class="ai-title"><span class="diamond">&#x25C6;</span>AI Batch Ready</div>
+      <div class="ai-counts">
+        <span style="color:var(--ai-soft); letter-spacing:0.1em;">24 high-confidence items &middot; $3,488 total variance</span>
+      </div>
+    </div>
+    <div class="ai-rule">
+      <span><span class="rule-label">RULE</span>Auto-approve if <code>AI confidence &#8805; 90%</code> AND <code>dollar impact &lt; $500</code> AND <code>age &#8805; 24h</code> AND <code>pattern in library</code></span>
+      <label class="edit-rule" for="t-admin">EDIT RULE &rarr;</label>
+    </div>
+    <div class="ai-actions">
+      <button class="btn-primary-lg">&#x2713; APPROVE ALL 24 &middot; POST TO ERP &amp; WMS</button>
+      <button class="btn-secondary-lg">REVIEW ONE BY ONE</button>
+    </div>
+    <div class="ai-patterns">
+      <table>
+        <thead><tr><th>PATTERN</th><th>COUNT</th><th>AVG VALUE</th><th>AVG AGE</th><th>PROPOSED ACTION</th></tr></thead>
+        <tbody>
+          <tr><td>Late ERP receipt post-GRN (returns window)</td><td>9</td><td>$142</td><td>26h</td><td>Post adjustment, mark resolved</td></tr>
+          <tr><td>Putaway timing gap (WMS delayed on shift change)</td><td>7</td><td>$98</td><td>25h</td><td>Replicate WMS event, align timestamps</td></tr>
+          <tr><td>Cycle count resolved (manual count posted)</td><td>6</td><td>$211</td><td>29h</td><td>Apply count, clear variance</td></tr>
+          <tr><td>Subinventory transfer not replicated</td><td>2</td><td>$45</td><td>24h</td><td>Replay transfer, confirm both sides</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Toolbar with NEAR ME filter and SCAN button (warehouse worker feedback) -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="icon">&#x1F50D;</span>
+      <input type="text" placeholder="Search by SKU, item, PO, dock, lot, or aging, type / to focus">
+      <span class="small">GO</span>
+    </div>
+    <span class="filter-label">MY</span>
+    <span class="filter-chip near-me">NEAR ME &middot; DW DOCK 4</span>
+    <span class="filter-chip">ONLY MINE 7</span>
+    <div class="filter-sep"></div>
+    <span class="filter-label">SEVERITY</span>
+    <span class="filter-chip active">ALL 102</span>
+    <span class="filter-chip">CRITICAL 9</span>
+    <span class="filter-chip">HIGH 27</span>
+    <span class="filter-chip">MED 44</span>
+    <span class="filter-chip">LOW 22</span>
+    <div class="filter-sep"></div>
+    <span class="filter-label">FACILITY</span>
+    <span class="filter-chip">DSW 71</span>
+    <span class="filter-chip">BCV 14</span>
+    <span class="filter-chip">CV 8</span>
+    <span class="filter-chip">DW 6</span>
+    <div class="filter-sep"></div>
+    <!-- Scan to resolve per warehouse worker feedback -->
+    <button class="scan-btn">&#x1F4F7; SCAN QR</button>
+  </div>
+
+  <h2 class="section-title">Your Queue &middot; 7 items need decision</h2>
+
+  <!-- ANOMALY 1: Critical, recommendation-led -->
+  <details class="anomaly-item crit" open>
+    <summary class="anomaly-summary">
+      <span class="sev-tag crit">CRITICAL</span>
+      <span class="anomaly-facility">DSW <span class="near">NEAR YOU</span></span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>POST 480-unit adjustment</strong> to align WMS with ERP receipt for <em>CTN Gallon ESL Chocolate Box Assem</em></div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55102</span><span class="sep">&middot;</span>
+          <span>SKU 801542</span><span class="sep">&middot;</span>
+          <span>PO 99-3849</span><span class="sep">&middot;</span>
+          <span>Dock 4, Lane B</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="plus">+480</span> units
+        <span class="sub">$9,600 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">97%</span>
+        <span class="rec">Post adjustment</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">14m</span>
+        in queue
+      </div>
+      <button class="quick-approve" title="Approve (keystroke: A)">&#x2713;</button>
+    </summary>
+    <div class="anomaly-detail">
+      <div class="sync-view">
+        <div class="sys-box erp">
+          <div class="sys-name">ORACLE FUSION ERP</div>
+          <div class="sys-qty">4,320</div>
+          <div class="sys-meta">posted 06:59:42 EST &middot; event ID ERP-884412</div>
+          <div class="sys-note">Receipt closed against PO 99-3849 for 4,320 cases. Truck 844 posted on dock 4. Receiving clerk: Marcus T.</div>
+        </div>
+        <div class="sync-divider">&ne;</div>
+        <div class="sys-box wms">
+          <div class="sys-name">ORACLE WMS</div>
+          <div class="sys-qty">3,840</div>
+          <div class="sys-meta">last update 06:48:11 EST &middot; lane B assignment pending</div>
+          <div class="sys-note">Putaway confirmation captured for 3,840 units. 480 units remain in staging zone 4B with no putaway event. Forklift batch terminated early (shift change).</div>
+        </div>
+      </div>
+      <div class="delta-bar" style="background: var(--s-bad); color: #FFFDF5; padding: 6px 14px; border-radius: 3px; font-family: Georgia, serif;">DELTA &middot; 480 UNITS SHORT IN WMS &middot; $9,600 VARIANCE</div>
+
+      <div class="detail-cols" style="margin-top: 14px;">
+        <div>
+          <div class="ai-rec-box">
+            <div class="ai-rec-label">&#x25C6; AI RECOMMENDATION &middot; CONFIDENCE 97%</div>
+            <div class="ai-rec-text">Post a +480 unit adjustment in WMS to match ERP receipt. Reason: putaway batch terminated at shift change before last 480 units were scanned. Pattern seen 14 times in last 90 days with 100% resolution rate.</div>
+            <div class="ai-conf-row">
+              <span class="ai-conf-num">97%</span>
+              <div class="ai-conf-track"><div class="ai-conf-fill" style="width: 97%;"></div></div>
+              <span class="ai-conf-label">HIGH CONFIDENCE</span>
+            </div>
+            <div class="ai-reasoning">
+              <div class="ai-reasoning-label">REASONING</div>
+              <ul>
+                <li>ERP receipt fully closed at 06:59:42, WMS last putaway 06:48:11 (during shift change)</li>
+                <li>Forklift operator badged out before scanning last skid row</li>
+                <li>CCTV frame from dock 4 at 06:49 shows 2 skids still on staging</li>
+                <li>Pattern matches 14 prior cases in DSW dock 4, all resolved by adjustment</li>
+              </ul>
+            </div>
+            <div class="proposed-steps">
+              <div class="proposed-steps-label">PROPOSED STEPS (after approval)</div>
+              <ol>
+                <li>Post +480 inventory adjustment in WMS lane B</li>
+                <li>Mark ANM-55102 as resolved with reason "shift-change putaway gap"</li>
+                <li>Append audit event "approved by Operator 07:14 EST"</li>
+                <li>Notify DSW dock lead that skids are on lane B for putaway</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">EVENT TIMELINE</div>
+              <div class="panel-sub">&#x25C6;</div>
+            </div>
+            <div class="timeline">
+              <div class="tl-item evt-erp"><div class="tl-time">06:40:22</div><div class="tl-text">PO 99-3849 truck arrived dock 4</div></div>
+              <div class="tl-item evt-wms"><div class="tl-time">06:44:03</div><div class="tl-text">WMS putaway batch started, operator Marcus T.</div></div>
+              <div class="tl-item evt-wms"><div class="tl-time">06:48:11</div><div class="tl-text">WMS putaway batch terminated early (shift change handoff)</div></div>
+              <div class="tl-item evt-erp"><div class="tl-time">06:59:42</div><div class="tl-text">ERP receipt closed by receiving clerk: 4,320 cases</div></div>
+              <div class="tl-item evt-sync"><div class="tl-time">07:00:01</div><div class="tl-text">Spyglass scan: delta detected, anomaly created</div></div>
+              <div class="tl-item evt-bad"><div class="tl-time">07:00:14</div><div class="tl-text">Classified CRITICAL, pattern matched to 14 prior cases</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 primary actions + kebab per warehouse worker feedback -->
+      <div class="hitl-actions">
+        <button class="btn-approve">&#x2713; APPROVE &middot; POST ADJUSTMENT</button>
+        <button class="btn-snooze">SNOOZE UNTIL...</button>
+        <button class="btn-escalate">ESCALATE TO SUPERVISOR</button>
+        <details class="kebab"><summary></summary>
+          <div class="kebab-menu">
+            <div class="kbi">Modify before posting</div>
+            <div class="kbi">Reassign to teammate</div>
+            <div class="kbi">Hold for cycle count</div>
+            <div class="kbi">Compare ERP and WMS events</div>
+            <div class="kbi">Add note to anomaly</div>
+            <div class="kb-sep"></div>
+            <div class="kbi danger">Reject AI recommendation</div>
+          </div>
+        </details>
+      </div>
+      <div class="voice-hint"><span class="mic">&#x1F3A4;</span> HOLD TO SPEAK &middot; SAY "APPROVE" OR "SNOOZE FOR TWO HOURS"</div>
+
+      <div class="snooze-options" style="margin-top: 14px;">
+        <div class="so-label">QUICK SNOOZE</div>
+        <div class="so-chips">
+          <span class="so-chip">AFTER LUNCH (13:00)</span>
+          <span class="so-chip">NEXT SHIFT (15:00)</span>
+          <span class="so-chip">TOMORROW 07:00</span>
+          <span class="so-chip">WAIT FOR TONY</span>
+          <span class="so-chip">WAIT FOR NIGHT SHIFT</span>
+          <span class="so-chip">PICK CUSTOM...</span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ANOMALY 2: High -->
+  <details class="anomaly-item high">
+    <summary class="anomaly-summary">
+      <span class="sev-tag high">HIGH</span>
+      <span class="anomaly-facility">DSW</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Replay WMS putaway event</strong> for 220 cases of CTN 6/64 LFPR Chocolate Milk</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55098</span><span class="sep">&middot;</span>
+          <span>SKU 712980</span><span class="sep">&middot;</span>
+          <span>PO 99-3842</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="plus">+220</span> cases
+        <span class="sub">$4,620 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">92%</span>
+        <span class="rec">Replay event</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">22m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <!-- ANOMALY 3: High -->
+  <details class="anomaly-item high">
+    <summary class="anomaly-summary">
+      <span class="sev-tag high">HIGH</span>
+      <span class="anomaly-facility">BCV</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Apply cycle count and clear variance</strong> on Half &amp; Half Qt, 6/64 LOWS &amp; LFPR mixed pallet</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55091</span><span class="sep">&middot;</span>
+          <span>SKU 380155</span><span class="sep">&middot;</span>
+          <span>Lot CM-0407-3</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="minus">-36</span> cases
+        <span class="sub">$756 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">88%</span>
+        <span class="rec">Apply count</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">28m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <!-- ANOMALY 4: Med -->
+  <details class="anomaly-item med">
+    <summary class="anomaly-summary">
+      <span class="sev-tag med">MEDIUM</span>
+      <span class="anomaly-facility">DSW</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Confirm staging move</strong> for Bulk Milk 55gal Drum from lane 2 to lane 7</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55094</span><span class="sep">&middot;</span>
+          <span>SKU BM-552</span><span class="sep">&middot;</span>
+          <span>Drum 8840</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="plus">+1</span> drum
+        <span class="sub">$1,100 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">82%</span>
+        <span class="rec">Confirm move</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">36m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <!-- ANOMALY 5: Med -->
+  <details class="anomaly-item med">
+    <summary class="anomaly-summary">
+      <span class="sev-tag med">MEDIUM</span>
+      <span class="anomaly-facility">DW</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Write off 12 cases</strong> of Heavy Cream Qt due to cooler hold and short date</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55088</span><span class="sep">&middot;</span>
+          <span>SKU 445722</span><span class="sep">&middot;</span>
+          <span>Hold ticket 2206</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="minus">-12</span> cases
+        <span class="sub">$378 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">76%</span>
+        <span class="rec">Post write-off</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">44m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <!-- ANOMALY 6: Med -->
+  <details class="anomaly-item med">
+    <summary class="anomaly-summary">
+      <span class="sev-tag med">MEDIUM</span>
+      <span class="anomaly-facility">BCV</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Post SCC short-ship adjustment</strong> for 8 cases of Yogurt Smoothie 7oz, Route B-14</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55080</span><span class="sep">&middot;</span>
+          <span>SKU 661221</span><span class="sep">&middot;</span>
+          <span>Route B-14</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="minus">-8</span> cases
+        <span class="sub">$198 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">79%</span>
+        <span class="rec">Post short-ship</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">58m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <!-- ANOMALY 7: Low -->
+  <details class="anomaly-item low">
+    <summary class="anomaly-summary">
+      <span class="sev-tag low">LOW</span>
+      <span class="anomaly-facility">ICC</span>
+      <div class="rec-lead">
+        <div class="rec-action"><strong>Add 4 cases to inventory</strong> of ESL Skim Gal found in cooler 3 during walk</div>
+        <div class="rec-context">
+          <span class="anomaly-id">ANM-55076</span><span class="sep">&middot;</span>
+          <span>SKU 223110</span><span class="sep">&middot;</span>
+          <span>Cooler 3</span>
+        </div>
+      </div>
+      <div class="anomaly-qty">
+        <span class="plus">+4</span> cases
+        <span class="sub">$92 variance</span>
+      </div>
+      <div class="anomaly-ai">
+        <span class="conf">91%</span>
+        <span class="rec">Post addition</span>
+      </div>
+      <div class="anomaly-age">
+        <span class="age-big">1h 4m</span>
+        in queue
+      </div>
+      <button class="quick-approve">&#x2713;</button>
+    </summary>
+  </details>
+
+  <div class="ornament">&#x25C6; &middot; &#x25C6; &middot; &#x25C6;</div>
+
+</section>
+
+<!-- =================================================================== -->
+<!-- REPORTS SECTION -->
+<!-- =================================================================== -->
+<section id="s-reports" class="screen">
+  <h1 class="screen-title"><span class="diamond">&#x25C6;</span>Sync Reports</h1>
+  <div class="screen-sub">Reconciliation outcomes, accuracy trends, and root cause. Select a time period below.</div>
+
+  <!-- WHAT CHANGED band per manager feedback -->
+  <div class="changed-band">
+    <span class="cb-label">&#x25C6; WHAT CHANGED</span>
+    <div class="cb-items">
+      Since your last review on <strong>Mon Apr 06 13:42</strong>: daily accuracy up <strong>+0.8 pts to 97.59%</strong>, DSW facility slipped from <strong>94.2%</strong> to <strong>92.9%</strong> (watch), AI auto-resolve rose to <strong>63.2%</strong> (above 60% target), and <strong>2 new root causes</strong> exceeded 10% threshold (cycle count not posted, subinventory transfer not replicated).
+    </div>
+    <span class="cb-since">16H AGO</span>
+  </div>
+
+  <!-- Period toggle -->
+  <div class="period-toggle">
+    <span class="pt-label">TIME PERIOD</span>
+    <label for="p-day">DAY</label>
+    <label for="p-week">WEEK</label>
+    <label for="p-month">MONTH</label>
+    <label for="p-quarter">QUARTER</label>
+    <label for="p-year">YEAR</label>
+    <span class="pt-sep"></span>
+    <button class="export-btn">&#x2B07; EXPORT CSV</button>
+    <button class="export-btn">&#x2B07; EXPORT PDF</button>
+  </div>
+
+  <!-- DAY panel -->
+  <div class="period-panel" data-period="day">
+    <div style="font-size: 11px; color: var(--work-text-muted); margin-bottom: 10px; letter-spacing: 0.1em;">Apr 07, 2026 &middot; Tuesday &middot; Morning sync at 07:00 EST</div>
+    <div class="score-cards">
+      <div class="score-card good">
+        <div class="sc-name">QTY ACCURACY</div>
+        <div class="sc-sub">TODAY</div>
+        <div class="sc-big">97.59<span class="unit">%</span></div>
+        <div class="sc-bar"><div class="fill good" style="width: 97.6%;"></div><div class="target" style="left: 99.5%;"></div></div>
+        <div class="sc-delta warn"><span class="arr">&darr;</span>Gap 1.91pp to 99.5% target</div>
+      </div>
+      <div class="score-card good">
+        <div class="sc-name">RECORD MATCH</div>
+        <div class="sc-sub">TODAY</div>
+        <div class="sc-big">96.10<span class="unit">%</span></div>
+        <div class="sc-bar"><div class="fill good" style="width: 96.1%;"></div><div class="target" style="left: 99%;"></div></div>
+        <div class="sc-delta warn"><span class="arr">&darr;</span>102 of 2,615 records out of sync</div>
+      </div>
+      <div class="score-card good">
+        <div class="sc-name">AI AUTO-RESOLVE</div>
+        <div class="sc-sub">TODAY</div>
+        <div class="sc-big">63.2<span class="unit">%</span></div>
+        <div class="sc-bar"><div class="fill good" style="width: 63.2%;"></div><div class="target" style="left: 60%;"></div></div>
+        <div class="sc-delta good"><span class="arr">&uarr;</span>Above 60% target</div>
+      </div>
+      <div class="score-card warn">
+        <div class="sc-name">$ WRITE-OFF</div>
+        <div class="sc-sub">TODAY</div>
+        <div class="sc-big">$1,240</div>
+        <div class="sc-delta warn"><span class="arr">&darr;</span>2 escalations resolved as loss</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">ACCURACY TODAY</div>
+        <div class="panel-sub">HOURLY &middot; 07:00 TO NOW</div>
+      </div>
+      <div class="waterfall" style="grid-template-columns: repeat(11, 1fr);">
+        <div class="wf-col"><div class="wf-bar good" style="height: 75%;"></div><div class="wf-val">96.1%</div><div class="wf-label">07:00</div></div>
+        <div class="wf-col"><div class="wf-bar good" style="height: 77%;"></div><div class="wf-val">96.8%</div><div class="wf-label">08:00</div></div>
+        <div class="wf-col"><div class="wf-bar good" style="height: 77%;"></div><div class="wf-val">96.9%</div><div class="wf-label">09:00</div></div>
+        <div class="wf-col"><div class="wf-bar good" style="height: 78%;"></div><div class="wf-val">97.2%</div><div class="wf-label">10:00</div></div>
+        <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">97.9%</div><div class="wf-label">11:00</div></div>
+        <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">98.4%</div><div class="wf-label">12:00</div></div>
+        <div class="wf-col"><div class="wf-bar proj" style="height: 0%;"></div><div class="wf-val">(proj)</div><div class="wf-label">14:00</div></div>
+        <div class="wf-col"><div class="wf-bar proj" style="height: 0%;"></div><div class="wf-val">(proj)</div><div class="wf-label">15:00</div></div>
+        <div class="wf-col"><div class="wf-bar proj" style="height: 0%;"></div><div class="wf-val">(proj)</div><div class="wf-label">16:00</div></div>
+        <div class="wf-col"><div class="wf-bar proj" style="height: 0%;"></div><div class="wf-val">(proj)</div><div class="wf-label">17:00</div></div>
+        <div class="wf-col"><div class="wf-bar proj" style="height: 0%;"></div><div class="wf-val">(proj)</div><div class="wf-label">18:00</div></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top: 12px;">
+      <div class="panel-header">
+        <div class="panel-title">TODAY BY FACILITY</div>
+        <div class="panel-sub">RECORD MATCH %</div>
+      </div>
+      <div class="reason-row"><div class="reason-label">WRF</div><div class="reason-bar"><div class="rb-fill gold" style="width: 100%;"></div></div><div class="reason-num">100.0%</div></div>
+      <div class="reason-row"><div class="reason-label">DSW_BDW</div><div class="reason-bar"><div class="rb-fill gold" style="width: 98.2%;"></div></div><div class="reason-num">98.2%</div></div>
+      <div class="reason-row"><div class="reason-label">SCS</div><div class="reason-bar"><div class="rb-fill gold" style="width: 97.1%;"></div></div><div class="reason-num">97.1%</div></div>
+      <div class="reason-row"><div class="reason-label">ICC</div><div class="reason-bar"><div class="rb-fill gold" style="width: 95.6%;"></div></div><div class="reason-num">95.6%</div></div>
+      <div class="reason-row"><div class="reason-label">DSW_DAIRY</div><div class="reason-bar"><div class="rb-fill warn" style="width: 95.1%;"></div></div><div class="reason-num">95.1%</div></div>
+      <div class="reason-row"><div class="reason-label">BDW</div><div class="reason-bar"><div class="rb-fill warn" style="width: 94.8%;"></div></div><div class="reason-num">94.8%</div></div>
+      <div class="reason-row"><div class="reason-label">BCV</div><div class="reason-bar"><div class="rb-fill bad" style="width: 92.9%;"></div></div><div class="reason-num">92.9%</div></div>
+    </div>
+  </div>
+
+  <!-- WEEK panel -->
+  <div class="period-panel" data-period="week">
+    <div style="font-size: 11px; color: var(--work-text-muted); margin-bottom: 10px; letter-spacing: 0.1em;">Week 14 &middot; Mar 31 to Apr 07, 2026</div>
+    <div class="score-cards">
+      <div class="score-card good"><div class="sc-name">WEEK AVG</div><div class="sc-sub">ACCURACY</div><div class="sc-big">96.8<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 96.8%;"></div><div class="target" style="left: 99.5%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>+0.6pp vs Week 13</div></div>
+      <div class="score-card good"><div class="sc-name">RECORDS SYNCED</div><div class="sc-sub">THIS WEEK</div><div class="sc-big">18,420</div><div class="sc-delta good"><span class="arr">&uarr;</span>97.6% matched</div></div>
+      <div class="score-card good"><div class="sc-name">AI RESOLUTION</div><div class="sc-sub">WEEKLY</div><div class="sc-big">58.7<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 58.7%;"></div><div class="target" style="left: 60%;"></div></div><div class="sc-delta warn"><span class="arr">&darr;</span>1.3pp to goal</div></div>
+      <div class="score-card warn"><div class="sc-name">$ VARIANCE</div><div class="sc-sub">ABSORBED</div><div class="sc-big">$8,942</div><div class="sc-delta good"><span class="arr">&darr;</span>-$1,200 vs last week</div></div>
+    </div>
+    <div class="grid-2 mb-16">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">DAILY ACCURACY TREND</div><div class="panel-sub">WEEK 14</div></div>
+        <div class="waterfall" style="grid-template-columns: repeat(8, 1fr);">
+          <div class="wf-col"><div class="wf-bar good" style="height: 72%;"></div><div class="wf-val">95.8%</div><div class="wf-label">MAR 31</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 75%;"></div><div class="wf-val">96.4%</div><div class="wf-label">APR 01</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 78%;"></div><div class="wf-val">97.1%</div><div class="wf-label">APR 02</div></div>
+          <div class="wf-col"><div class="wf-bar warn" style="height: 65%;"></div><div class="wf-val">94.3%</div><div class="wf-label">APR 03</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">97.6%</div><div class="wf-label">APR 04</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 82%;"></div><div class="wf-val">98.0%</div><div class="wf-label">APR 05</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 78%;"></div><div class="wf-val">97.2%</div><div class="wf-label">APR 06</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">97.6%</div><div class="wf-label">APR 07</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">OUTCOMES MIX</div><div class="panel-sub">WEEK 14</div></div>
+        <div class="reason-row"><div class="reason-label">AI auto-resolved</div><div class="reason-bar"><div class="rb-fill ai" style="width: 58.7%;">58.7%</div></div><div class="reason-num">720</div></div>
+        <div class="reason-row"><div class="reason-label">Human approved AI</div><div class="reason-bar"><div class="rb-fill gold" style="width: 28.2%;">28.2%</div></div><div class="reason-num">346</div></div>
+        <div class="reason-row"><div class="reason-label">Human modified AI</div><div class="reason-bar"><div class="rb-fill warn" style="width: 8.4%;">8.4%</div></div><div class="reason-num">103</div></div>
+        <div class="reason-row"><div class="reason-label">Escalated</div><div class="reason-bar"><div class="rb-fill bad" style="width: 3.5%;">3.5%</div></div><div class="reason-num">43</div></div>
+        <div class="reason-row"><div class="reason-label">Written off</div><div class="reason-bar"><div class="rb-fill neutral" style="width: 1.2%;">1.2%</div></div><div class="reason-num">15</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">WEEKLY ROOT CAUSE &middot; TOP 5</div><div class="panel-sub">WEEK 14</div></div>
+      <div class="reason-row"><div class="reason-label">Put-away ticket stuck in exception</div><div class="reason-bar"><div class="rb-fill bad" style="width: 38%;">38%</div></div><div class="reason-num">274</div></div>
+      <div class="reason-row"><div class="reason-label">Receiving step skipped or delayed</div><div class="reason-bar"><div class="rb-fill warn" style="width: 24%;">24%</div></div><div class="reason-num">173</div></div>
+      <div class="reason-row"><div class="reason-label">Cycle count not posted to ERP</div><div class="reason-bar"><div class="rb-fill warn" style="width: 16%;">16%</div></div><div class="reason-num">115</div></div>
+      <div class="reason-row"><div class="reason-label">Subinventory transfer not replicated</div><div class="reason-bar"><div class="rb-fill gold" style="width: 12%;">12%</div></div><div class="reason-num">86</div></div>
+      <div class="reason-row"><div class="reason-label">Other or minor</div><div class="reason-bar"><div class="rb-fill neutral" style="width: 10%;">10%</div></div><div class="reason-num">72</div></div>
+    </div>
+  </div>
+
+  <!-- MONTH panel -->
+  <div class="period-panel" data-period="month">
+    <div style="font-size: 11px; color: var(--work-text-muted); margin-bottom: 10px; letter-spacing: 0.1em;">April 2026 &middot; Month-to-Date through Apr 07</div>
+    <div class="score-cards">
+      <div class="score-card good"><div class="sc-name">MTD AVG</div><div class="sc-sub">ACCURACY</div><div class="sc-big">96.9<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 96.9%;"></div><div class="target" style="left: 99.5%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>+0.7pp vs March</div></div>
+      <div class="score-card good"><div class="sc-name">MTD RECORDS</div><div class="sc-sub">RECONCILED</div><div class="sc-big">13,240</div><div class="sc-delta good"><span class="arr">&uarr;</span>782 resolved by AI</div></div>
+      <div class="score-card good"><div class="sc-name">AI RESOLVE</div><div class="sc-sub">MTD</div><div class="sc-big">59.1<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 59.1%;"></div><div class="target" style="left: 60%;"></div></div><div class="sc-delta warn"><span class="arr">&rarr;</span>On target</div></div>
+      <div class="score-card good"><div class="sc-name">WRITE-OFF</div><div class="sc-sub">MTD</div><div class="sc-big">$4,820</div><div class="sc-delta good"><span class="arr">&darr;</span>-34% vs March</div></div>
+    </div>
+    <div class="grid-2 mb-16">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">MONTH ACCURACY TREND</div><div class="panel-sub">APR MTD</div></div>
+        <div class="waterfall" style="grid-template-columns: repeat(7, 1fr);">
+          <div class="wf-col"><div class="wf-bar good" style="height: 75%;"></div><div class="wf-val">96.3%</div><div class="wf-label">APR 01</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 78%;"></div><div class="wf-val">97.0%</div><div class="wf-label">APR 02</div></div>
+          <div class="wf-col"><div class="wf-bar warn" style="height: 65%;"></div><div class="wf-val">94.3%</div><div class="wf-label">APR 03</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">97.6%</div><div class="wf-label">APR 04</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 82%;"></div><div class="wf-val">98.0%</div><div class="wf-label">APR 05</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 78%;"></div><div class="wf-val">97.2%</div><div class="wf-label">APR 06</div></div>
+          <div class="wf-col"><div class="wf-bar good" style="height: 80%;"></div><div class="wf-val">97.6%</div><div class="wf-label">APR 07</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">APRIL ROOT CAUSE</div><div class="panel-sub">782 RESOLVED</div></div>
+        <div class="reason-row"><div class="reason-label">Put-away timing gap</div><div class="reason-bar"><div class="rb-fill bad" style="width: 36%;">36%</div></div><div class="reason-num">281</div></div>
+        <div class="reason-row"><div class="reason-label">Late ERP receipt post</div><div class="reason-bar"><div class="rb-fill warn" style="width: 22%;">22%</div></div><div class="reason-num">172</div></div>
+        <div class="reason-row"><div class="reason-label">Cycle count not posted</div><div class="reason-bar"><div class="rb-fill warn" style="width: 17%;">17%</div></div><div class="reason-num">133</div></div>
+        <div class="reason-row"><div class="reason-label">Subinventory transfer</div><div class="reason-bar"><div class="rb-fill gold" style="width: 14%;">14%</div></div><div class="reason-num">109</div></div>
+        <div class="reason-row"><div class="reason-label">All other</div><div class="reason-bar"><div class="rb-fill neutral" style="width: 11%;">11%</div></div><div class="reason-num">87</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">AI FIX INSIGHTS</div><div class="panel-sub">APR MTD</div></div>
+      <div class="fixes-grid">
+        <div class="fix-card"><div class="fc-head">&#x25C6; MOST CAUGHT</div><div class="fc-title">Put-away timing gap resolved by replay</div><div class="fc-big">281</div><div class="fc-sub">AI replayed the timestamp alignment 281 times in April, zero manual escalations. $28,100 risk avoided.</div></div>
+        <div class="fix-card"><div class="fc-head">&#x25C6; FASTEST FIX</div><div class="fc-title">Cycle count posted to ERP</div><div class="fc-big">42s</div><div class="fc-sub">Median end-to-end resolution when counts are uploaded via scanner. 100% confidence, 100% posted.</div></div>
+        <div class="fix-card target-card"><div class="fc-head">&#x25C6; ON TARGET</div><div class="fc-title">AI resolve above 60%</div><div class="fc-big">59.1%</div><div class="fc-sub">Target 60%. Gap 0.9pp. Projected to cross target by Apr 12 based on 30-day trend.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUARTER panel -->
+  <div class="period-panel" data-period="quarter">
+    <div style="font-size: 11px; color: var(--work-text-muted); margin-bottom: 10px; letter-spacing: 0.1em;">Q1 2026 &middot; Jan 01 to Mar 31 (final) &middot; Q2 in progress</div>
+    <div class="score-cards">
+      <div class="score-card good"><div class="sc-name">Q1 FINAL</div><div class="sc-sub">ACCURACY</div><div class="sc-big">96.2<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 96.2%;"></div><div class="target" style="left: 99.5%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>+2.4pp vs Q4 2025</div></div>
+      <div class="score-card good"><div class="sc-name">RECORDS</div><div class="sc-sub">Q1 TOTAL</div><div class="sc-big">184,410</div><div class="sc-delta good"><span class="arr">&uarr;</span>+12% vs Q4</div></div>
+      <div class="score-card good"><div class="sc-name">AI RESOLVE</div><div class="sc-sub">Q1 AVG</div><div class="sc-big">56.3<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 56.3%;"></div><div class="target" style="left: 60%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>from 42% Q4</div></div>
+      <div class="score-card good"><div class="sc-name">WRITE-OFF</div><div class="sc-sub">Q1 TOTAL</div><div class="sc-big">$61,420</div><div class="sc-delta good"><span class="arr">&darr;</span>-$32K vs Q4</div></div>
+    </div>
+    <div class="grid-2 mb-16">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Q1 MONTHLY HEATMAP</div><div class="panel-sub">ACCURACY BY WEEK</div></div>
+        <div class="heatmap" style="grid-template-columns: 70px repeat(13, 1fr); gap: 3px;">
+          <div class="hm-label">&nbsp;</div>
+          <div class="hm-label" style="padding: 0; justify-content: center;">W1</div><div class="hm-label" style="padding: 0; justify-content: center;">W2</div><div class="hm-label" style="padding: 0; justify-content: center;">W3</div><div class="hm-label" style="padding: 0; justify-content: center;">W4</div><div class="hm-label" style="padding: 0; justify-content: center;">W5</div><div class="hm-label" style="padding: 0; justify-content: center;">W6</div><div class="hm-label" style="padding: 0; justify-content: center;">W7</div><div class="hm-label" style="padding: 0; justify-content: center;">W8</div><div class="hm-label" style="padding: 0; justify-content: center;">W9</div><div class="hm-label" style="padding: 0; justify-content: center;">W10</div><div class="hm-label" style="padding: 0; justify-content: center;">W11</div><div class="hm-label" style="padding: 0; justify-content: center;">W12</div><div class="hm-label" style="padding: 0; justify-content: center;">W13</div>
+          <div class="hm-label">JAN</div>
+          <div class="hm-cell h3">93.2</div><div class="hm-cell h3">93.8</div><div class="hm-cell h2">94.6</div><div class="hm-cell h2">95.0</div>
+          <div class="hm-cell h1" style="grid-column: span 9;"></div>
+          <div class="hm-label">FEB</div>
+          <div class="hm-cell h0" style="grid-column: span 4;"></div>
+          <div class="hm-cell h2">95.2</div><div class="hm-cell h2">95.8</div><div class="hm-cell h1">96.4</div><div class="hm-cell h1">96.8</div>
+          <div class="hm-cell h0" style="grid-column: span 5;"></div>
+          <div class="hm-label">MAR</div>
+          <div class="hm-cell h0" style="grid-column: span 8;"></div>
+          <div class="hm-cell h1">97.0</div><div class="hm-cell h1">97.2</div><div class="hm-cell h1">97.0</div><div class="hm-cell h1">96.8</div><div class="hm-cell h1">96.9</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Q1 VS Q4 COMPARISON</div><div class="panel-sub">PROGRAM IMPACT</div></div>
+        <table class="data">
+          <thead><tr><th>METRIC</th><th style="text-align:right;">Q4 2025</th><th style="text-align:right;">Q1 2026</th><th style="text-align:right;">CHANGE</th></tr></thead>
+          <tbody>
+            <tr><td>Accuracy</td><td class="num">93.8%</td><td class="num">96.2%</td><td class="num" style="color: var(--s-good);">+2.4pp</td></tr>
+            <tr><td>Records synced</td><td class="num">164,620</td><td class="num">184,410</td><td class="num" style="color: var(--s-good);">+12%</td></tr>
+            <tr><td>AI resolve rate</td><td class="num">42.1%</td><td class="num">56.3%</td><td class="num" style="color: var(--s-good);">+14.2pp</td></tr>
+            <tr><td>Median time to close</td><td class="num">11h 30m</td><td class="num">2h 40m</td><td class="num" style="color: var(--s-good);">-76%</td></tr>
+            <tr><td>Write-off</td><td class="num">$93,420</td><td class="num">$61,420</td><td class="num" style="color: var(--s-good);">-$32K</td></tr>
+            <tr><td>Escalations</td><td class="num">312</td><td class="num">186</td><td class="num" style="color: var(--s-good);">-40%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- YEAR panel -->
+  <div class="period-panel" data-period="year">
+    <div style="font-size: 11px; color: var(--work-text-muted); margin-bottom: 10px; letter-spacing: 0.1em;">2024 full, 2025 full, 2026 YTD comparison view</div>
+    <div class="score-cards">
+      <div class="score-card good"><div class="sc-name">YTD AVG</div><div class="sc-sub">ACCURACY 2026</div><div class="sc-big">95.3<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 95.3%;"></div><div class="target" style="left: 99.5%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>+4.1pp vs 2025</div></div>
+      <div class="score-card good"><div class="sc-name">RECORDS</div><div class="sc-sub">YTD 2026</div><div class="sc-big">3,847</div><div class="sc-delta good"><span class="arr">&uarr;</span>vs 29,420 in 2025</div></div>
+      <div class="score-card good"><div class="sc-name">AI RESOLVE</div><div class="sc-sub">YTD 2026</div><div class="sc-big">30<span class="unit">%</span></div><div class="sc-bar"><div class="fill good" style="width: 30%;"></div><div class="target" style="left: 60%;"></div></div><div class="sc-delta good"><span class="arr">&uarr;</span>from 10% in 2025</div></div>
+      <div class="score-card good"><div class="sc-name">WRITE-OFF</div><div class="sc-sub">YTD 2026</div><div class="sc-big">$22,635</div><div class="sc-delta good"><span class="arr">&darr;</span>track to $119K program saving</div></div>
+    </div>
+    <div class="panel mb-16">
+      <div class="panel-header"><div class="panel-title">MULTI-YEAR ACCURACY TREND</div><div class="panel-sub">MONTHLY RECORD MATCH %</div></div>
+      <div style="padding: 8px 0;">
+        <svg viewBox="0 0 800 180" style="width: 100%; height: 180px;">
+          <!-- axes -->
+          <line x1="36" y1="12" x2="36" y2="158" stroke="#D8C89E" stroke-width="1"/>
+          <line x1="36" y1="158" x2="790" y2="158" stroke="#D8C89E" stroke-width="1"/>
+          <!-- target line at 99.5% -->
+          <line x1="36" y1="18" x2="790" y2="18" stroke="#B89E6A" stroke-dasharray="4 4" stroke-width="1"/>
+          <text x="42" y="14" fill="#8F7A55" font-size="9" font-family="Georgia, serif">99.5% TARGET</text>
+          <!-- y labels -->
+          <text x="30" y="22" fill="#8F7A55" font-size="9" font-family="Georgia, serif" text-anchor="end">100</text>
+          <text x="30" y="72" fill="#8F7A55" font-size="9" font-family="Georgia, serif" text-anchor="end">95</text>
+          <text x="30" y="122" fill="#8F7A55" font-size="9" font-family="Georgia, serif" text-anchor="end">90</text>
+          <text x="30" y="162" fill="#8F7A55" font-size="9" font-family="Georgia, serif" text-anchor="end">85</text>
+          <!-- 2024 line -->
+          <polyline fill="none" stroke="#9E5E0F" stroke-width="2" points="60,130 120,125 180,126 240,128 300,122 360,120 420,118 480,116 540,114 600,112 660,110 720,108"/>
+          <!-- 2025 line -->
+          <polyline fill="none" stroke="#C8A060" stroke-width="2.5" points="60,100 120,98 180,96 240,94 300,90 360,88 420,85 480,82 540,80 600,76 660,72 720,68"/>
+          <!-- 2026 line -->
+          <polyline fill="none" stroke="#6A4B95" stroke-width="3" points="60,50 120,45 180,38 240,34"/>
+          <circle cx="240" cy="34" r="4" fill="#6A4B95" stroke="#fff" stroke-width="2"/>
+          <!-- x labels -->
+          <text x="60" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">JAN</text>
+          <text x="120" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">FEB</text>
+          <text x="180" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">MAR</text>
+          <text x="240" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">APR</text>
+          <text x="300" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">MAY</text>
+          <text x="360" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">JUN</text>
+          <text x="420" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">JUL</text>
+          <text x="480" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">AUG</text>
+          <text x="540" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">SEP</text>
+          <text x="600" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">OCT</text>
+          <text x="660" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">NOV</text>
+          <text x="720" y="172" fill="#8F7A55" font-size="9" text-anchor="middle" font-family="Georgia, serif">DEC</text>
+          <!-- legend -->
+          <rect x="600" y="14" width="12" height="3" fill="#9E5E0F"/>
+          <text x="616" y="18" font-size="10" fill="#8F7A55" font-family="Georgia, serif">2024 avg 87.4%</text>
+          <rect x="600" y="28" width="12" height="3" fill="#C8A060"/>
+          <text x="616" y="32" font-size="10" fill="#8F7A55" font-family="Georgia, serif">2025 avg 91.2%</text>
+          <rect x="600" y="42" width="12" height="3" fill="#6A4B95"/>
+          <text x="616" y="46" font-size="10" fill="#6A4B95" font-family="Georgia, serif" font-weight="bold">2026 YTD 95.3%</text>
+        </svg>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">YEAR OVER YEAR</div><div class="panel-sub">METRIC COMPARISON</div></div>
+        <table class="data">
+          <thead><tr><th>METRIC</th><th style="text-align:right;">2024</th><th style="text-align:right;">2025</th><th style="text-align:right;">2026 YTD</th></tr></thead>
+          <tbody>
+            <tr><td>Accuracy</td><td class="num">87.4%</td><td class="num">91.2%</td><td class="num" style="color: var(--s-good);">95.3%</td></tr>
+            <tr><td>Records reconciled</td><td class="num">402,800</td><td class="num">587,320</td><td class="num">184,410</td></tr>
+            <tr><td>AI resolve rate</td><td class="num">0%</td><td class="num">10%</td><td class="num" style="color: var(--s-good);">30%</td></tr>
+            <tr><td>Write-off</td><td class="num">$612,400</td><td class="num">$488,920</td><td class="num" style="color: var(--s-good);">$61,420</td></tr>
+            <tr><td>Median close time</td><td class="num">18h</td><td class="num">11h 30m</td><td class="num" style="color: var(--s-good);">2h 40m</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">PROGRAM IMPACT YTD</div><div class="panel-sub">2026</div></div>
+        <div style="font-family: Georgia, serif; font-size: 48px; color: var(--s-good); margin-bottom: 6px;">$119,925</div>
+        <div style="font-size: 12px; color: var(--work-text-muted); letter-spacing: 0.1em;">WRITE-OFF AVOIDED YTD VS 2025 PACE</div>
+        <div style="margin-top: 14px; font-family: Georgia, serif; font-size: 32px; color: var(--ai);">1,264 hr</div>
+        <div style="font-size: 12px; color: var(--work-text-muted); letter-spacing: 0.1em;">OPERATIONAL HOURS RETURNED</div>
+        <div style="margin-top: 14px; font-family: Georgia, serif; font-size: 32px; color: var(--brand-gold);">97.8% AVG</div>
+        <div style="font-size: 12px; color: var(--work-text-muted); letter-spacing: 0.1em;">PROJECTED FY26 ACCURACY</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- =================================================================== -->
+<!-- ADMIN SECTION -->
+<!-- =================================================================== -->
+<section id="s-admin" class="screen">
+  <h1 class="screen-title"><span class="diamond">&#x25C6;</span>Admin</h1>
+  <div class="screen-sub">Integration health, audit log, and AI rule management. Admin access only.</div>
+
+  <div class="subnav">
+    <label for="adm-integrations">&#x267A; INTEGRATIONS &amp; HEALTH</label>
+    <label for="adm-audit">&#x1F512; AUDIT LOG</label>
+    <label for="adm-rules">&#x25C6; AI RULES</label>
+  </div>
+
+  <div id="adm-pane-integrations" class="admin-sub">
+    <div class="health-grid">
+      <div class="hb"><div class="hb-l">ORACLE FUSION ERP</div><div class="hb-v">ONLINE</div><div class="hb-s">Last heartbeat 7s</div></div>
+      <div class="hb"><div class="hb-l">ORACLE WMS</div><div class="hb-v">ONLINE</div><div class="hb-s">Last heartbeat 9s</div></div>
+      <div class="hb warn"><div class="hb-l">SPYGLASS SYNC</div><div class="hb-v">DEGRADED</div><div class="hb-s">42ms latency (norm 18ms)</div></div>
+      <div class="hb"><div class="hb-l">AI MODEL</div><div class="hb-v">V2.3.1</div><div class="hb-s">90-day confidence 94.7%</div></div>
+    </div>
+    <div class="integ-grid">
+      <div class="flow-diagram">
+        <div style="font-family: Georgia, serif; font-size: 14px; color: var(--work-text); letter-spacing: 0.12em; margin-bottom: 14px;">DATA FLOW</div>
+        <svg viewBox="0 0 600 180" style="width: 100%; height: 180px;">
+          <rect x="10" y="40" width="130" height="100" rx="5" fill="#DDE8EE" stroke="#3F6A85" stroke-width="2"/>
+          <text x="75" y="80" fill="#3F6A85" font-family="Georgia, serif" font-size="13" text-anchor="middle">ORACLE</text>
+          <text x="75" y="100" fill="#3F6A85" font-family="Georgia, serif" font-size="13" text-anchor="middle">FUSION ERP</text>
+          <text x="75" y="120" fill="#3F6A85" font-size="10" text-anchor="middle">4,320 events/hr</text>
+
+          <rect x="230" y="20" width="140" height="140" rx="5" fill="#EDE3F5" stroke="#6A4B95" stroke-width="2"/>
+          <text x="300" y="60" fill="#6A4B95" font-family="Georgia, serif" font-size="13" text-anchor="middle">SPYGLASS</text>
+          <text x="300" y="82" fill="#6A4B95" font-family="Georgia, serif" font-size="13" text-anchor="middle">RECONCILER</text>
+          <text x="300" y="108" fill="#6A4B95" font-size="10" text-anchor="middle">AI v2.3.1</text>
+          <text x="300" y="130" fill="#6A4B95" font-size="10" text-anchor="middle">12,820 checks/hr</text>
+
+          <rect x="460" y="40" width="130" height="100" rx="5" fill="#F6EED4" stroke="#C8A060" stroke-width="2"/>
+          <text x="525" y="90" fill="#886717" font-family="Georgia, serif" font-size="13" text-anchor="middle">ORACLE</text>
+          <text x="525" y="110" fill="#886717" font-family="Georgia, serif" font-size="13" text-anchor="middle">WMS</text>
+          <text x="525" y="128" fill="#886717" font-size="10" text-anchor="middle">8,460 events/hr</text>
+
+          <line x1="140" y1="90" x2="225" y2="90" stroke="#6B5636" stroke-width="2" marker-end="url(#arr)"/>
+          <line x1="375" y1="90" x2="455" y2="90" stroke="#6B5636" stroke-width="2" marker-end="url(#arr)"/>
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6B5636"/></marker></defs>
+        </svg>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">CONNECTION HEALTH</div><div class="panel-sub">LAST 24H</div></div>
+        <table class="data">
+          <tbody>
+            <tr><td>ERP &rarr; Spyglass uptime</td><td class="num">99.98%</td></tr>
+            <tr><td>WMS &rarr; Spyglass uptime</td><td class="num">99.94%</td></tr>
+            <tr><td>Median sync latency</td><td class="num">18ms</td></tr>
+            <tr><td>Failed events (retry)</td><td class="num">3</td></tr>
+            <tr><td>API rate limit usage</td><td class="num">42%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="adm-pane-audit" class="admin-sub">
+    <div class="audit-item">
+      <div class="audit-time">07:14:08</div>
+      <div><div class="audit-text"><strong>Operator</strong> approved <strong>ANM-55102</strong> at $9,600 variance, posted +480 unit adjustment to WMS</div><div class="audit-user">ROLE OPERATOR &middot; IP 10.24.15.88</div></div>
+      <span class="pill ai">AI 97%</span>
+    </div>
+    <div class="audit-item">
+      <div class="audit-time">07:12:44</div>
+      <div><div class="audit-text">AI auto-resolved <strong>ANM-55099</strong> at $142 variance (pattern: late ERP receipt)</div><div class="audit-user">SPYGLASS AI V2.3.1</div></div>
+      <span class="pill ai">AUTO 94%</span>
+    </div>
+    <div class="audit-item">
+      <div class="audit-time">07:10:22</div>
+      <div><div class="audit-text"><strong>Operator</strong> escalated <strong>ANM-55088</strong> to DSW supervisor (reason: cooler hold)</div><div class="audit-user">ROLE OPERATOR &middot; IP 10.24.15.41</div></div>
+      <span class="pill warn">ESCALATED</span>
+    </div>
+    <div class="audit-item">
+      <div class="audit-time">07:08:11</div>
+      <div><div class="audit-text"><strong>AI rule change</strong> by <strong>Administrator</strong>: auto-approve dollar impact threshold raised from $400 to $500</div><div class="audit-user">ROLE ADMIN &middot; IP 10.24.15.41</div></div>
+      <span class="pill info">RULE EDIT</span>
+    </div>
+    <div class="audit-item">
+      <div class="audit-time">07:04:58</div>
+      <div><div class="audit-text">AI auto-resolved <strong>ANM-55091</strong> at $756 variance (pattern: cycle count posted late)</div><div class="audit-user">SPYGLASS AI V2.3.1</div></div>
+      <span class="pill ai">AUTO 92%</span>
+    </div>
+    <div class="audit-item">
+      <div class="audit-time">07:01:15</div>
+      <div><div class="audit-text"><strong>Operator</strong> snoozed <strong>ANM-55094</strong> until after lunch (13:00)</div><div class="audit-user">ROLE OPERATOR &middot; IP 10.24.15.88</div></div>
+      <span class="pill neutral">SNOOZED</span>
+    </div>
+  </div>
+
+  <div id="adm-pane-rules" class="admin-sub">
+    <div class="rule-block">
+      <div class="rule-name">Auto-Approve High-Confidence Low-Dollar Items</div>
+      <div class="rule-expr">IF AI confidence &#8805; 90% AND dollar impact &lt; $500 AND age &#8805; 24h AND pattern in library <br>THEN auto-approve and post</div>
+      <div class="rule-meta">
+        <span>Active since Apr 01 &middot; applied 782 times this month &middot; 0 false positives</span>
+        <div class="rule-actions" style="margin-left: auto;">
+          <button class="rule-btn edit">EDIT</button>
+          <button class="rule-btn test">TEST</button>
+        </div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-name">Escalate Cooler Hold Variances</div>
+      <div class="rule-expr">IF variance on SKU in cold-chain category AND age &gt; 2h AND no prior escalation <br>THEN route to DSW supervisor and tag as cold-chain</div>
+      <div class="rule-meta">
+        <span>Active since Mar 12 &middot; applied 28 times this month &middot; 100% resolved</span>
+        <div class="rule-actions" style="margin-left: auto;">
+          <button class="rule-btn edit">EDIT</button>
+          <button class="rule-btn test">TEST</button>
+        </div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-name">Hold For Cycle Count</div>
+      <div class="rule-expr">IF variance magnitude &gt; 20 units AND cycle count scheduled within 48h <br>THEN hold and annotate with scheduled count time</div>
+      <div class="rule-meta">
+        <span>Active since Feb 05 &middot; applied 58 times this month</span>
+        <div class="rule-actions" style="margin-left: auto;">
+          <button class="rule-btn edit">EDIT</button>
+          <button class="rule-btn test">TEST</button>
+        </div>
+      </div>
+    </div>
+    <div class="rule-block" style="border-color: var(--ai); border-left: 4px solid var(--ai);">
+      <div class="rule-name" style="color: var(--ai);">&#x25C6; AI PROPOSED RULE (PENDING REVIEW)</div>
+      <div class="rule-expr">IF facility = DSW AND anomaly in "putaway shift-change gap" pattern AND confidence &#8805; 92% <br>THEN auto-approve up to $10,000 variance</div>
+      <div class="rule-meta">
+        <span style="color: var(--ai);">AI observed 14 cases in 90 days, 100% resolved by human approval. Projected benefit 28 hr/mo operator time saved.</span>
+        <div class="rule-actions" style="margin-left: auto;">
+          <button class="rule-btn edit">APPROVE</button>
+          <button class="rule-btn test">DISMISS</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<!-- =================================================================== -->
+<!-- HELP OVERLAY -->
+<!-- =================================================================== -->
+<div class="help-overlay">
+  <div class="help-panel">
+    <div class="help-title">Keyboard Shortcuts</div>
+    <div class="help-sub">Move faster on the queue. The top three are also shown in the status bar.</div>
+    <div class="help-grid">
+      <div class="help-row"><span class="key">J</span><span>Next anomaly in queue</span></div>
+      <div class="help-row"><span class="key">K</span><span>Previous anomaly in queue</span></div>
+      <div class="help-row"><span class="key">Enter</span><span>Expand or collapse current row</span></div>
+      <div class="help-row"><span class="key">Esc</span><span>Close expanded row or overlay</span></div>
+      <div class="help-row"><span class="key">A</span><span>Approve the AI recommendation</span></div>
+      <div class="help-row"><span class="key">S</span><span>Snooze the current item</span></div>
+      <div class="help-row"><span class="key">E</span><span>Escalate the current item</span></div>
+      <div class="help-row"><span class="key">M</span><span>Modify before posting</span></div>
+      <div class="help-row"><span class="key">R</span><span>Reject the AI recommendation</span></div>
+      <div class="help-row"><span class="key">Shift</span><span class="key">J</span><span>Range select in queue</span></div>
+      <div class="help-row"><span class="key">Space</span><span>Toggle checkbox on row</span></div>
+      <div class="help-row"><span class="key">/</span><span>Focus the search field</span></div>
+      <div class="help-row"><span class="key">F</span><span>Open filter menu</span></div>
+      <div class="help-row"><span class="key">1</span><span class="key">2</span><span class="key">3</span><span>Switch tabs (Queue, Reports, Floor)</span></div>
+      <div class="help-row"><span class="key">?</span><span>Show this help panel</span></div>
+      <div class="help-row"><span class="key">Hold</span><span>Voice mic, say "approve" or "snooze"</span></div>
+    </div>
+    <label class="help-close" for="h-show">GOT IT</label>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- FOOTER LIVE FEED -->
+<!-- =================================================================== -->
+<footer class="live-feed">
+  <span class="live-badge">&#x25CF; LIVE SYNC</span>
+  <div class="ticker">
+    <span class="ts">07:14:08</span><span class="tag">[WMS]</span> Put-away ticket PA-9948 completed &middot; 4,320 units Film Stretch Wrap committed to STOCK ROOM
+    <span style="margin: 0 18px; color: var(--brand-gold);">&#x25C6;</span>
+    <span class="ts">07:14:05</span><span class="tag">[SYNC]</span> Event delta pass complete &middot; 0 new anomalies &middot; 3 cleared
+    <span style="margin: 0 18px; color: var(--brand-gold);">&#x25C6;</span>
+    <span class="ts">07:13:42</span><span class="tag">[AI]</span> Recommendation posted for ANM-55102
+    <span style="margin: 0 18px; color: var(--brand-gold);">&#x25C6;</span>
+  </div>
+  <span class="version-tag">DAIRY INVENTORY TRACKER &middot; <strong>V1.3</strong></span>
+</footer>
+
+</body>
+</html>

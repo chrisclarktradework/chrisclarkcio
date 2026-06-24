@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Spyglass PPM Control Tower &middot; V1.0</title>
+<style>
+:root {
+  /* match Spyglass V2.1 aesthetic */
+  --bg-deep: #2D2015;
+  --bg-panel: #3A2210;
+  --bg-surface: #4A2C17;
+  --bg-surface-lt: #5A3A24;
+  --bg-card: #3F2511;
+  --border: #7B5B3A;
+  --border-lt: #6B5944;
+  --border-soft: rgba(212,168,83,0.18);
+  --text: #F2E8D4;
+  --text-muted: #C4B59A;
+  --text-dim: #8A7856;
+  --accent-gold: #D4A853;
+  --accent-gold-bright: #F4C870;
+  --accent-cream: #FAF5EC;
+  --status-good: #8FB98B;
+  --status-good-strong: #3E7142;
+  --status-warn: #E38B55;
+  --status-warn-strong: #B8860B;
+  --status-bad: #B33A1B;
+  --status-bad-bright: #D94A2B;
+  --info: #50808E;
+  --data-1: #D4A853;
+  --data-2: #3E7142;
+  --data-3: #B33A1B;
+  --data-4: #50808E;
+  --data-5: #A26769;
+  --data-6: #E38B55;
+  --data-7: #6B8E4E;
+  --data-8: #8C6E54;
+  --data-9: #B8860B;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg-deep); color: var(--text); font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; min-height: 100vh; }
+.serif { font-family: 'Georgia', 'Times New Roman', serif; letter-spacing: 0.04em; }
+a { color: var(--accent-gold); text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* Top bar */
+header.topbar {
+  display: flex; align-items: center; gap: 24px;
+  padding: 14px 24px; background: var(--bg-panel);
+  border-bottom: 2px solid var(--accent-gold);
+}
+.brand { display: flex; flex-direction: column; line-height: 1; }
+.brand .name { font-family: Georgia, serif; font-size: 28px; letter-spacing: 0.15em; color: var(--accent-cream); }
+.brand .tag { font-size: 9px; letter-spacing: 0.35em; color: var(--accent-gold); margin-top: 2px; }
+.title-block { flex: 1; }
+.title-block .title { font-family: Georgia, serif; font-size: 18px; letter-spacing: 0.08em; color: var(--accent-cream); }
+.title-block .sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.08em; }
+.status-pills { display: flex; gap: 10px; }
+.pill { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; border: 1px solid; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.pill.good { border-color: var(--status-good-strong); color: var(--status-good); background: rgba(62,113,66,0.15); }
+.pill.good .dot { background: var(--status-good); box-shadow: 0 0 6px var(--status-good); }
+.pill.warn { border-color: var(--status-warn-strong); color: var(--status-warn); background: rgba(184,134,11,0.15); }
+.pill.warn .dot { background: var(--status-warn); box-shadow: 0 0 6px var(--status-warn); }
+.pill.bad { border-color: var(--status-bad); color: var(--status-bad-bright); background: rgba(179,58,27,0.15); }
+.pill.bad .dot { background: var(--status-bad-bright); box-shadow: 0 0 6px var(--status-bad-bright); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+.clock { font-family: Georgia, serif; font-size: 22px; letter-spacing: 0.1em; color: var(--accent-cream); }
+.clock .date { font-size: 10px; letter-spacing: 0.2em; color: var(--text-muted); display:block; text-align:right; margin-top:2px; }
+
+/* Tabs */
+nav.tabs {
+  display: flex; gap: 0; padding: 0 24px; background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-lt);
+  overflow-x: auto;
+}
+nav.tabs label {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 12px 18px; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.08em; color: var(--text-muted);
+  border-bottom: 2px solid transparent; cursor: pointer;
+  text-transform: uppercase; white-space: nowrap;
+  transition: all 0.15s ease;
+}
+nav.tabs label:hover { color: var(--accent-cream); background: rgba(212,168,83,0.05); }
+nav.tabs label .icon { font-size: 14px; }
+
+main { padding: 18px 24px 70px 24px; max-width: 1900px; margin: 0 auto; }
+
+/* CSS-only tab system */
+input.tab-radio { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+.tab-pane { display: none; }
+#tr-overview:checked  ~ main #overview,
+#tr-spend:checked     ~ main #spend,
+#tr-burn:checked      ~ main #burn,
+#tr-evm:checked       ~ main #evm,
+#tr-sprints:checked   ~ main #sprints,
+#tr-kpis:checked      ~ main #kpis,
+#tr-steerco:checked   ~ main #steerco { display: block; }
+
+#tr-overview:checked ~ nav.tabs label[for="tr-overview"],
+#tr-spend:checked    ~ nav.tabs label[for="tr-spend"],
+#tr-burn:checked     ~ nav.tabs label[for="tr-burn"],
+#tr-evm:checked      ~ nav.tabs label[for="tr-evm"],
+#tr-sprints:checked  ~ nav.tabs label[for="tr-sprints"],
+#tr-kpis:checked     ~ nav.tabs label[for="tr-kpis"],
+#tr-steerco:checked  ~ nav.tabs label[for="tr-steerco"] { color: var(--accent-gold-bright); border-bottom-color: var(--accent-gold); background: rgba(212,168,83,0.08); }
+
+/* SteerCo sub-tabs */
+input.subtab-radio { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+.subtab-pane { display: none; }
+#sub-status:checked  ~ .subtab-body #sub-status-pane,
+#sub-raid:checked    ~ .subtab-body #sub-raid-pane,
+#sub-weekly:checked  ~ .subtab-body #sub-weekly-pane,
+#sub-actions:checked ~ .subtab-body #sub-actions-pane,
+#sub-roi:checked     ~ .subtab-body #sub-roi-pane { display: block; }
+
+.subtabs {
+  display: flex; gap: 0; margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-lt);
+}
+.subtabs label {
+  padding: 10px 16px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  text-transform: uppercase; cursor: pointer;
+}
+.subtabs label:hover { color: var(--accent-cream); }
+#sub-status:checked  ~ .subtabs label[for="sub-status"],
+#sub-raid:checked    ~ .subtabs label[for="sub-raid"],
+#sub-weekly:checked  ~ .subtabs label[for="sub-weekly"],
+#sub-actions:checked ~ .subtabs label[for="sub-actions"],
+#sub-roi:checked     ~ .subtabs label[for="sub-roi"] { color: var(--accent-gold-bright); border-bottom-color: var(--accent-gold); }
+
+/* Layout helpers */
+.grid { display: grid; gap: 14px; }
+.g-2 { grid-template-columns: repeat(2, 1fr); }
+.g-3 { grid-template-columns: repeat(3, 1fr); }
+.g-4 { grid-template-columns: repeat(4, 1fr); }
+.g-6 { grid-template-columns: repeat(6, 1fr); }
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+.span-4 { grid-column: span 4; }
+
+/* Panel */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-lt);
+  border-radius: 4px;
+  padding: 14px 16px;
+  position: relative;
+}
+.panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent-gold); opacity: 0.55;
+}
+.panel.good::before { background: var(--status-good-strong); opacity: 1; }
+.panel.warn::before { background: var(--status-warn-strong); opacity: 1; }
+.panel.bad::before  { background: var(--status-bad); opacity: 1; }
+
+.panel h2 {
+  font-family: Georgia, serif; font-size: 14px; letter-spacing: 0.18em;
+  color: var(--accent-gold); margin-bottom: 4px; text-transform: uppercase;
+  font-weight: normal;
+}
+.panel .sub {
+  font-size: 10px; letter-spacing: 0.16em; color: var(--text-dim);
+  margin-bottom: 12px; text-transform: uppercase;
+}
+
+/* KPI tiles */
+.kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px; }
+.kpi {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-lt);
+  border-radius: 4px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent-gold); opacity: 0.55; }
+.kpi.good::before { background: var(--status-good-strong); opacity: 1; }
+.kpi.warn::before { background: var(--status-warn-strong); opacity: 1; }
+.kpi.bad::before  { background: var(--status-bad); opacity: 1; }
+.kpi .label { font-size: 10px; letter-spacing: 0.18em; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; }
+.kpi .value { font-family: Georgia, serif; font-size: 26px; color: var(--accent-cream); letter-spacing: 0.02em; }
+.kpi .value .unit { font-size: 13px; color: var(--accent-gold); margin-left: 2px; letter-spacing: 0.05em; }
+.kpi .delta { font-size: 11px; margin-top: 4px; color: var(--text-muted); }
+.kpi .delta.up { color: var(--status-good); }
+.kpi .delta.down { color: var(--status-bad-bright); }
+.kpi .target { font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.04em; }
+
+/* Tables */
+table.data { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.data th {
+  text-align: left; padding: 9px 10px;
+  color: var(--text-dim); font-size: 10px;
+  letter-spacing: 0.12em; font-weight: 600;
+  border-bottom: 1px solid var(--border-lt);
+  text-transform: uppercase; white-space: nowrap;
+}
+table.data td {
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(123,91,58,0.25);
+  color: var(--text);
+}
+table.data tr:hover td { background: rgba(212,168,83,0.05); }
+table.data .num { font-family: Georgia, serif; font-variant-numeric: tabular-nums; text-align: right; }
+table.data tr:last-child td { border-bottom: none; }
+
+/* Source chips */
+.src {
+  display: inline-block; font-size: 9px; letter-spacing: 0.15em;
+  color: var(--text-dim); padding: 2px 7px; border: 1px solid var(--border-lt);
+  border-radius: 10px; text-transform: uppercase; margin-left: 8px;
+}
+.src.jira { color: #6B9BD8; border-color: rgba(107,155,216,0.4); }
+.src.smartsheet { color: #6BA76B; border-color: rgba(107,167,107,0.4); }
+.src.oracle { color: var(--accent-gold); border-color: rgba(212,168,83,0.5); }
+.src.ai { color: var(--data-5); border-color: rgba(162,103,105,0.5); }
+
+/* Status chips inline */
+.chip { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.chip.green { background: rgba(62,113,66,0.25); color: var(--status-good); border: 1px solid var(--status-good-strong); }
+.chip.amber { background: rgba(184,134,11,0.20); color: var(--status-warn); border: 1px solid var(--status-warn-strong); }
+.chip.red { background: rgba(179,58,27,0.22); color: var(--status-bad-bright); border: 1px solid var(--status-bad); }
+.chip.muted { background: rgba(138,120,86,0.15); color: var(--text-dim); border: 1px solid var(--text-dim); }
+.chip.info { background: rgba(80,128,142,0.20); color: var(--info); border: 1px solid var(--info); }
+
+/* Bars */
+.bar-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.bar-row .label { width: 230px; font-size: 11px; color: var(--text); }
+.bar-row .bar-wrap { flex: 1; background: var(--bg-deep); border-radius: 3px; height: 14px; position: relative; overflow: hidden; border: 1px solid var(--border-lt); }
+.bar-row .bar { height: 100%; border-radius: 2px; }
+.bar-row .num { width: 100px; text-align: right; font-family: Georgia, serif; font-size: 12px; color: var(--text); }
+.bar-row .target-marker { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--accent-gold-bright); }
+
+/* Sprint cards */
+.phase-block { margin-bottom: 18px; }
+.phase-header {
+  display: flex; align-items: baseline; gap: 14px; padding: 8px 12px;
+  background: rgba(212,168,83,0.08); border-left: 3px solid var(--accent-gold);
+  margin-bottom: 8px; border-radius: 0 3px 3px 0;
+}
+.phase-header .ph-name { font-family: Georgia, serif; font-size: 15px; letter-spacing: 0.1em; color: var(--accent-cream); }
+.phase-header .ph-meta { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
+.sprint-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.sprint-card {
+  background: var(--bg-panel); border: 1px solid var(--border-lt);
+  border-radius: 4px; padding: 10px 12px; position: relative;
+}
+.sprint-card .sc-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.sprint-card .sc-id { font-family: Georgia, serif; font-size: 13px; color: var(--accent-cream); letter-spacing: 0.04em; }
+.sprint-card .sc-ws { font-size: 10px; color: var(--accent-gold); letter-spacing: 0.1em; }
+.sprint-card .sc-meta { font-size: 10px; color: var(--text-dim); margin-bottom: 6px; }
+.sprint-card .sc-bar { background: var(--bg-deep); height: 8px; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+.sprint-card .sc-bar .fill { height: 100%; background: var(--status-good); }
+.sprint-card .sc-stats { display: flex; gap: 12px; font-size: 10px; color: var(--text-muted); }
+.sprint-card .sc-stats span b { color: var(--accent-cream); font-family: Georgia, serif; font-size: 12px; }
+
+/* RAID */
+.raid-row { display: grid; grid-template-columns: 50px 50px 1fr 130px 100px 100px 100px; gap: 12px; padding: 10px 12px; border-bottom: 1px solid rgba(123,91,58,0.25); align-items: center; }
+.raid-row.head { color: var(--text-dim); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; border-bottom: 1px solid var(--border-lt); }
+.raid-row .id-tag { font-family: Georgia, serif; font-size: 12px; letter-spacing: 0.05em; color: var(--accent-gold); }
+.raid-row .desc { font-size: 12px; line-height: 1.4; color: var(--text); }
+.raid-row .desc small { display: block; font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* Action log */
+.action-row {
+  display: grid; grid-template-columns: 50px 1fr 140px 110px 90px 90px;
+  gap: 12px; padding: 10px 12px;
+  border-bottom: 1px solid rgba(123,91,58,0.25);
+  align-items: center;
+}
+.action-row.head { color: var(--text-dim); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; border-bottom: 1px solid var(--border-lt); }
+.action-row .id-tag { font-family: Georgia, serif; font-size: 12px; color: var(--accent-gold); }
+
+/* Weekly summary */
+.weekly-list { display: grid; gap: 12px; }
+.week-card {
+  background: var(--bg-panel); border: 1px solid var(--border-lt);
+  border-radius: 4px; padding: 14px 16px; position: relative;
+}
+.week-card::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--accent-gold); }
+.week-card .wc-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.week-card .wc-date { font-family: Georgia, serif; font-size: 14px; color: var(--accent-cream); letter-spacing: 0.05em; }
+.week-card .wc-attendees { font-size: 10px; color: var(--text-dim); letter-spacing: 0.04em; }
+.week-card .wc-section { margin-top: 8px; }
+.week-card .wc-section h4 { font-size: 10px; letter-spacing: 0.18em; color: var(--accent-gold); margin-bottom: 4px; text-transform: uppercase; font-weight: 600; }
+.week-card .wc-section ul { list-style: none; }
+.week-card .wc-section li { font-size: 12px; color: var(--text); padding: 3px 0 3px 14px; position: relative; }
+.week-card .wc-section li::before { content: '·'; position: absolute; left: 4px; color: var(--accent-gold); font-weight: bold; }
+
+/* Charts */
+.chart-wrap { position: relative; height: 280px; padding-top: 4px; }
+.chart-wrap.tall { height: 360px; }
+.chart-wrap.short { height: 220px; }
+
+/* Misc */
+.note { font-size: 11px; color: var(--text-muted); padding: 8px 0; line-height: 1.4; }
+hr.div { border: none; border-top: 1px solid var(--border-lt); margin: 14px 0; }
+
+/* Footer */
+footer.foot {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg-panel); border-top: 1px solid var(--border-lt);
+  padding: 8px 24px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em;
+}
+footer.foot .legend { display: flex; gap: 14px; }
+footer.foot .legend span { display: flex; align-items: center; gap: 6px; }
+footer.foot .legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Phase strip */
+.phase-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  margin: 8px 0 16px 0;
+}
+.phase-strip .ph {
+  background: var(--bg-panel); border: 1px solid var(--border-lt);
+  border-radius: 4px; padding: 10px 12px; position: relative;
+}
+.phase-strip .ph.done::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--status-good-strong); }
+.phase-strip .ph.active::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent-gold-bright); }
+.phase-strip .ph.future::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--text-dim); opacity: 0.4; }
+.phase-strip .ph .ph-id { font-size: 10px; letter-spacing: 0.18em; color: var(--text-dim); }
+.phase-strip .ph .ph-name { font-family: Georgia, serif; font-size: 14px; color: var(--accent-cream); margin: 4px 0; }
+.phase-strip .ph .ph-stat { font-size: 11px; color: var(--text-muted); }
+.phase-strip .ph.done .ph-stat { color: var(--status-good); }
+.phase-strip .ph.active .ph-stat { color: var(--accent-gold-bright); }
+
+/* Logo lockup at bottom of page */
+.brand-mark {
+  position: fixed; bottom: 28px; left: 24px;
+  font-family: Georgia, serif; font-size: 9px; letter-spacing: 0.35em;
+  color: var(--text-dim); padding: 4px 8px;
+  border: 1px solid var(--border-lt); background: var(--bg-panel);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+/* Drill down (details/summary) */
+details.drill { background: var(--bg-deep); border: 1px solid var(--border-lt); border-radius: 4px; padding: 0; margin: 6px 0; }
+details.drill[open] { border-color: var(--accent-gold); }
+details.drill summary {
+  list-style: none; cursor: pointer; padding: 10px 14px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text);
+}
+details.drill summary::-webkit-details-marker { display: none; }
+details.drill summary::after { content: '▾'; color: var(--accent-gold); font-size: 10px; }
+details.drill[open] summary::after { content: '▴'; }
+details.drill .body { padding: 0 14px 14px 14px; font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+/* Util */
+.center { text-align: center; }
+.right { text-align: right; }
+.muted { color: var(--text-muted); }
+.dim { color: var(--text-dim); }
+.gold { color: var(--accent-gold); }
+.cream { color: var(--accent-cream); }
+.good { color: var(--status-good); }
+.warn { color: var(--status-warn); }
+.bad { color: var(--status-bad-bright); }
+.bold { font-weight: 700; }
+.mono { font-family: Georgia, serif; font-variant-numeric: tabular-nums; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mb-16 { margin-bottom: 16px; }
+</style>
+
+<style id="cio-theme">:root{--bg-deep:#0A2540;--bg-panel:#0E2C49;--bg-surface:#123A5C;--bg-surface-lt:#17436A;--border:rgba(231,207,142,.16);--border-lt:rgba(231,207,142,.26);--text:#F4F7FA;--text-muted:#C7D3DF;--text-dim:#9FB1C2;--accent-gold:#A9832C;--accent-gold-bright:#C8A24B;--accent-cream:#E7CF8E;}</style>
+</head>
+<body>
+
+<!-- Tab radios (hidden) -->
+<input type="radio" name="tab" id="tr-overview" class="tab-radio" checked />
+<input type="radio" name="tab" id="tr-spend"    class="tab-radio" />
+<input type="radio" name="tab" id="tr-burn"     class="tab-radio" />
+<input type="radio" name="tab" id="tr-evm"      class="tab-radio" />
+<input type="radio" name="tab" id="tr-sprints"  class="tab-radio" />
+<input type="radio" name="tab" id="tr-kpis"     class="tab-radio" />
+<input type="radio" name="tab" id="tr-steerco"  class="tab-radio" />
+
+<header class="topbar">
+  <a href="index.html" aria-label="Back to resume home" style="display:contents;text-decoration:none;color:inherit;cursor:pointer">
+  <div class="brand">
+    <span class="name">Chris Clark</span>
+    <span class="tag">PORTFOLIO</span>
+  </div>
+  </a>
+  <div class="title-block">
+    <div class="title">PROGRAM MANAGEMENT CONTROL TOWER</div>
+    <div class="sub">PPM and Governance &middot; WS8 Active &middot; Phase 3 of 4 &middot; Month 14 of 18</div>
+  </div>
+  <div class="status-pills">
+    <span class="pill good"><span class="dot"></span> CPI 0.96 &middot; ON BUDGET</span>
+    <span class="pill warn"><span class="dot"></span> SPI 0.93 &middot; 2 WK SLIP</span>
+    <span class="pill bad"><span class="dot"></span> 1 RED RISK OPEN</span>
+  </div>
+  <div class="clock">
+    14:22 ET
+    <span class="date">MAY 1, 2026</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <label for="tr-overview"><span class="icon">◆</span> OVERVIEW</label>
+  <label for="tr-spend"><span class="icon">$</span> SPEND</label>
+  <label for="tr-burn"><span class="icon">↘</span> BURN</label>
+  <label for="tr-evm"><span class="icon">∑</span> EVM</label>
+  <label for="tr-sprints"><span class="icon">⌂</span> SPRINTS</label>
+  <label for="tr-kpis"><span class="icon">⌖</span> KPI &amp; OUTCOMES</label>
+  <label for="tr-steerco"><span class="icon">⚑</span> STEERCO</label>
+</nav>
+
+<main>
+
+<!-- ============================================================
+     TAB 1 : OVERVIEW
+============================================================ -->
+<section id="overview" class="tab-pane">
+
+  <!-- Phase strip -->
+  <div class="phase-strip">
+    <div class="ph done"><div class="ph-id">PHASE 0</div><div class="ph-name">Discovery</div><div class="ph-stat">Closed · SG1 ✓</div></div>
+    <div class="ph done"><div class="ph-id">PHASE 1</div><div class="ph-name">Foundation</div><div class="ph-stat">Closed · SG2 ✓</div></div>
+    <div class="ph done"><div class="ph-id">PHASE 2</div><div class="ph-name">Activate</div><div class="ph-stat">Closed · SG3 ✓</div></div>
+    <div class="ph active"><div class="ph-id">PHASE 3</div><div class="ph-name">Optimize</div><div class="ph-stat">In flight · 67% complete</div></div>
+    <div class="ph future"><div class="ph-id">PHASE 4</div><div class="ph-name">Sustain</div><div class="ph-stat">Starts Jul 2026</div></div>
+  </div>
+
+  <!-- KPI tiles (program health) -->
+  <div class="kpi-row">
+    <div class="kpi good">
+      <div class="label">CPI</div>
+      <div class="value">0.96</div>
+      <div class="delta up">+0.02 wk</div>
+      <div class="target">Target ≥ 0.95</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">SPI</div>
+      <div class="value">0.93</div>
+      <div class="delta down">-0.01 wk</div>
+      <div class="target">Target ≥ 0.95</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">EAC</div>
+      <div class="value">$3.74<span class="unit">M</span></div>
+      <div class="delta up">+$40K vs BAC</div>
+      <div class="target">BAC $3.60M (capped)</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">VAC</div>
+      <div class="value">-$140<span class="unit">K</span></div>
+      <div class="delta down">3.9% over</div>
+      <div class="target">Within 5% tolerance</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">Sprint Velocity</div>
+      <div class="value">38<span class="unit">pts</span></div>
+      <div class="delta down">-6 vs trailing avg</div>
+      <div class="target">Target 44 pts</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">OTIF MTD</div>
+      <div class="value">93.4<span class="unit">%</span></div>
+      <div class="delta up">+0.6 pts</div>
+      <div class="target">Target 95.0%</div>
+    </div>
+  </div>
+
+  <div class="grid g-3" style="grid-template-columns: 1.4fr 1fr 1fr;">
+
+    <!-- WS health table -->
+    <div class="panel">
+      <h2>Workstream Health</h2>
+      <div class="sub">Phase 3 status by workstream <span class="src smartsheet">SMARTSHEET</span></div>
+      <table class="data">
+        <thead>
+          <tr>
+            <th>WS</th><th>Workstream</th><th>Phase</th>
+            <th class="num">% Done</th><th class="num">CPI</th><th class="num">SPI</th><th>RAG</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="gold mono">WS0</td><td>Program Foundation</td><td>Closed</td><td class="num">100%</td><td class="num">1.02</td><td class="num">1.00</td><td><span class="chip green">G</span></td></tr>
+          <tr><td class="gold mono">WS1</td><td>Inventory Sync Agent</td><td>Phase 3</td><td class="num">88%</td><td class="num">0.97</td><td class="num">0.96</td><td><span class="chip green">G</span></td></tr>
+          <tr><td class="gold mono">WS2</td><td>Master Data &amp; Production Logic</td><td>Phase 3</td><td class="num">81%</td><td class="num">0.94</td><td class="num">0.92</td><td><span class="chip amber">A</span></td></tr>
+          <tr><td class="gold mono">WS3</td><td>Reporting Library</td><td>Phase 3</td><td class="num">76%</td><td class="num">0.99</td><td class="num">0.95</td><td><span class="chip green">G</span></td></tr>
+          <tr><td class="gold mono">WS4</td><td>Demand &amp; Supply Planning</td><td>Phase 3</td><td class="num">62%</td><td class="num">0.91</td><td class="num">0.86</td><td><span class="chip red">R</span></td></tr>
+          <tr><td class="gold mono">WS5</td><td>Financial Close Automation</td><td>Phase 3</td><td class="num">70%</td><td class="num">0.96</td><td class="num">0.93</td><td><span class="chip amber">A</span></td></tr>
+          <tr><td class="gold mono">WS6</td><td>Spyglass Production Dashboards</td><td>Phase 3</td><td class="num">55%</td><td class="num">0.97</td><td class="num">0.94</td><td><span class="chip amber">A</span></td></tr>
+          <tr><td class="gold mono">WS7</td><td>Redwood Migration</td><td>Stabilize</td><td class="num">94%</td><td class="num">1.01</td><td class="num">0.98</td><td><span class="chip green">G</span></td></tr>
+          <tr><td class="gold mono">WS8</td><td>AI Governance &amp; Training <span class="chip info" style="margin-left:4px">CURRENT</span></td><td>Phase 3</td><td class="num">48%</td><td class="num">0.95</td><td class="num">0.92</td><td><span class="chip amber">A</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cost burn vs plan chart -->
+    <div class="panel">
+      <h2>Cost Curve</h2>
+      <div class="sub">PV vs EV vs AC cumulative <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartCostCurve"></canvas></div>
+    </div>
+
+    <!-- Top risks -->
+    <div class="panel bad">
+      <h2>Top Risks Now</h2>
+      <div class="sub">RAID excerpt &middot; sorted by exposure <span class="src smartsheet">SMARTSHEET</span></div>
+      <details class="drill" open>
+        <summary><span><span class="chip red">R-014</span> &nbsp; WS4 hypertuning blocked by demand history depth</span></summary>
+        <div class="body">3 item families fall below the 18 month minimum. Mitigation: temporary classical baseline. Owner: Pedro AG. Due: 2026-05-08.</div>
+      </details>
+      <details class="drill">
+        <summary><span><span class="chip red">R-021</span> &nbsp; WS6 dashboard activation contingent on WS7 stabilization</span></summary>
+        <div class="body">Redwood stabilization not yet at 90 day mark. Conditional go-live targeted for 2026-06-15. Owner: Chris Clark.</div>
+      </details>
+      <details class="drill">
+        <summary><span><span class="chip amber">R-017</span> &nbsp; WS8 adoption metric coverage incomplete</span></summary>
+        <div class="body">Persona based adoption baseline missing for Plant Floor and Finance Close. Champion network expansion in progress. Owner: Brianna.</div>
+      </details>
+      <details class="drill">
+        <summary><span><span class="chip amber">R-019</span> &nbsp; Vendor SOW V3 amendment not yet signed</span></summary>
+        <div class="body">SI T&amp;M to fixed fee conversion for Phase 3 awaiting CFO signature. Owner: Tom Chartrand.</div>
+      </details>
+      <details class="drill">
+        <summary><span><span class="chip amber">R-022</span> &nbsp; Agent token spend trending +18% vs forecast</span></summary>
+        <div class="body">WS1 production agents exceeding modeled token budget. Triage: prompt compression and caching review. Owner: Sasi.</div>
+      </details>
+    </div>
+
+  </div>
+
+  <hr class="div"/>
+
+  <!-- Outcomes ribbon -->
+  <div class="grid g-4">
+    <div class="kpi good">
+      <div class="label">Inventory Accuracy</div>
+      <div class="value">98.2<span class="unit">%</span></div>
+      <div class="delta up">+1.8 pts vs baseline</div>
+      <div class="target">Target 99.0%</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Forecast MAPE</div>
+      <div class="value">14.6<span class="unit">%</span></div>
+      <div class="delta up">-2.4 pts vs baseline</div>
+      <div class="target">Target ≤ 13.5%</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Expedite Spend YTD</div>
+      <div class="value">$614<span class="unit">K</span></div>
+      <div class="delta up">-$210K vs prior YTD</div>
+      <div class="target">Run rate $0.95M ann.</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">Close Cycle Days</div>
+      <div class="value">5.2</div>
+      <div class="delta up">-1.4 days vs baseline</div>
+      <div class="target">Target 4.0 days</div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 2 : SPEND
+============================================================ -->
+<section id="spend" class="tab-pane">
+
+  <div class="kpi-row">
+    <div class="kpi good">
+      <div class="label">BAC</div>
+      <div class="value">$3.60<span class="unit">M</span></div>
+      <div class="target">Capped (BAFO capped baseline)</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">EAC</div>
+      <div class="value">$3.74<span class="unit">M</span></div>
+      <div class="target">+$140K vs BAC</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">AC to date</div>
+      <div class="value">$2.51<span class="unit">M</span></div>
+      <div class="target">70% of BAC</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">ETC</div>
+      <div class="value">$1.23<span class="unit">M</span></div>
+      <div class="target">Remaining work</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Contingency</div>
+      <div class="value">$220<span class="unit">K</span></div>
+      <div class="target">61% remaining</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">KPI Incentive Pool</div>
+      <div class="value">$210<span class="unit">K</span></div>
+      <div class="target">$135K earned to date</div>
+    </div>
+  </div>
+
+  <div class="grid g-2">
+    <div class="panel">
+      <h2>Spend by Workstream</h2>
+      <div class="sub">Actual vs plan, in flight workstreams <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartSpendByWS"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Spend by Phase</h2>
+      <div class="sub">Cumulative spend vs phase budget <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartSpendByPhase"></canvas></div>
+    </div>
+  </div>
+
+  <hr class="div"/>
+
+  <div class="grid g-2">
+    <div class="panel">
+      <h2>Vendor Spend &amp; Burn</h2>
+      <div class="sub">Active vendors by SOW <span class="src smartsheet">SMARTSHEET</span></div>
+      <table class="data">
+        <thead><tr><th>Vendor</th><th>Type</th><th class="num">SOW</th><th class="num">Invoiced</th><th class="num">Open PO</th><th class="num">Burn %</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Lead SI Partner</td><td>SI · T&amp;M cap</td><td class="num">$3,600,000</td><td class="num">$2,184,000</td><td class="num">$418,000</td><td class="num">61%</td><td><span class="chip green">G</span></td></tr>
+          <tr><td>Planning Platform Vendor</td><td>SaaS · 3-yr</td><td class="num">$2,200,000</td><td class="num">$734,000</td><td class="num">$0</td><td class="num">33%</td><td><span class="chip green">G</span></td></tr>
+          <tr><td>Planning Implementation (WS4)</td><td>Fixed fee</td><td class="num">$1,800,000</td><td class="num">$1,134,000</td><td class="num">$222,000</td><td class="num">63%</td><td><span class="chip amber">A</span></td></tr>
+          <tr><td>Niche AI Specialist (Phase A)</td><td>Fixed</td><td class="num">$237,000</td><td class="num">$237,000</td><td class="num">$0</td><td class="num">100%</td><td><span class="chip green">G</span></td></tr>
+          <tr><td>Governance Advisory (WS8)</td><td>T&amp;M</td><td class="num">$370,000</td><td class="num">$182,000</td><td class="num">$0</td><td class="num">49%</td><td><span class="chip green">G</span></td></tr>
+          <tr><td>Oracle (Agent Studio uplift)</td><td>SaaS</td><td class="num">$140,000</td><td class="num">$98,000</td><td class="num">$0</td><td class="num">70%</td><td><span class="chip green">G</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Cost Type Mix</h2>
+      <div class="sub">YTD AC composition <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartCostMix"></canvas></div>
+      <div class="note">
+        AI infrastructure (Oracle Agent Studio, OCI compute, model tokens) growing as Spyglass agents move to production. Token budget under active review (RAID R-022).
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 3 : BURN
+============================================================ -->
+<section id="burn" class="tab-pane">
+
+  <div class="kpi-row">
+    <div class="kpi good">
+      <div class="label">Story points planned</div>
+      <div class="value">412</div>
+      <div class="target">Phase 3 plan total</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Story points done</div>
+      <div class="value">274</div>
+      <div class="target">66% complete</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">Velocity (3-spr avg)</div>
+      <div class="value">38<span class="unit">pts</span></div>
+      <div class="delta down">-6 vs trailing</div>
+      <div class="target">Target 44</div>
+    </div>
+    <div class="kpi warn">
+      <div class="label">Burn projection</div>
+      <div class="value">+11<span class="unit">d</span></div>
+      <div class="target">vs Phase 3 baseline</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Defect escape rate</div>
+      <div class="value">2.1<span class="unit">%</span></div>
+      <div class="delta up">-0.4 pts</div>
+      <div class="target">Target ≤ 3%</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">DoD compliance</div>
+      <div class="value">96<span class="unit">%</span></div>
+      <div class="target">Target 95%</div>
+    </div>
+  </div>
+
+  <div class="grid g-2">
+    <div class="panel">
+      <h2>Phase 3 Burn-Down</h2>
+      <div class="sub">Story points remaining by sprint <span class="src jira">JIRA</span></div>
+      <div class="chart-wrap tall"><canvas id="chartBurnDown"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Cumulative Flow</h2>
+      <div class="sub">Backlog &middot; In progress &middot; Done <span class="src jira">JIRA</span></div>
+      <div class="chart-wrap tall"><canvas id="chartCFD"></canvas></div>
+    </div>
+  </div>
+
+  <hr class="div"/>
+
+  <div class="panel">
+    <h2>Velocity by Workstream Squad</h2>
+    <div class="sub">Last 6 sprints, story points completed <span class="src jira">JIRA</span></div>
+    <div class="chart-wrap tall"><canvas id="chartVelocity"></canvas></div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 4 : EVM
+============================================================ -->
+<section id="evm" class="tab-pane">
+
+  <div class="kpi-row">
+    <div class="kpi good"><div class="label">PV (BCWS)</div><div class="value">$2.71<span class="unit">M</span></div><div class="target">Planned to date</div></div>
+    <div class="kpi good"><div class="label">EV (BCWP)</div><div class="value">$2.52<span class="unit">M</span></div><div class="target">Earned to date</div></div>
+    <div class="kpi good"><div class="label">AC (ACWP)</div><div class="value">$2.51<span class="unit">M</span></div><div class="target">Actual to date</div></div>
+    <div class="kpi warn"><div class="label">SV</div><div class="value">-$190<span class="unit">K</span></div><div class="delta down">Behind schedule</div></div>
+    <div class="kpi good"><div class="label">CV</div><div class="value">+$10<span class="unit">K</span></div><div class="delta up">On budget</div></div>
+    <div class="kpi good"><div class="label">TCPI</div><div class="value">1.04</div><div class="target">to recover BAC</div></div>
+  </div>
+
+  <div class="panel mt-12">
+    <h2>EVM by Workstream</h2>
+    <div class="sub">PV / EV / AC and earned value indices <span class="src smartsheet">SMARTSHEET</span></div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>WS</th><th>Workstream</th>
+          <th class="num">PV</th><th class="num">EV</th><th class="num">AC</th>
+          <th class="num">CV</th><th class="num">SV</th>
+          <th class="num">CPI</th><th class="num">SPI</th>
+          <th class="num">EAC</th><th class="num">VAC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="gold mono">WS0</td><td>Program Foundation</td>
+          <td class="num">$120K</td><td class="num">$120K</td><td class="num">$118K</td>
+          <td class="num good">+$2K</td><td class="num">$0</td>
+          <td class="num">1.02</td><td class="num">1.00</td>
+          <td class="num">$118K</td><td class="num good">+$2K</td></tr>
+        <tr><td class="gold mono">WS1</td><td>Inventory Sync Agent</td>
+          <td class="num">$420K</td><td class="num">$402K</td><td class="num">$415K</td>
+          <td class="num bad">-$13K</td><td class="num bad">-$18K</td>
+          <td class="num">0.97</td><td class="num">0.96</td>
+          <td class="num">$478K</td><td class="num bad">-$8K</td></tr>
+        <tr><td class="gold mono">WS2</td><td>Master Data &amp; Prod. Logic</td>
+          <td class="num">$310K</td><td class="num">$285K</td><td class="num">$303K</td>
+          <td class="num bad">-$18K</td><td class="num bad">-$25K</td>
+          <td class="num">0.94</td><td class="num">0.92</td>
+          <td class="num">$425K</td><td class="num bad">-$23K</td></tr>
+        <tr><td class="gold mono">WS3</td><td>Reporting Library</td>
+          <td class="num">$240K</td><td class="num">$228K</td><td class="num">$230K</td>
+          <td class="num bad">-$2K</td><td class="num bad">-$12K</td>
+          <td class="num">0.99</td><td class="num">0.95</td>
+          <td class="num">$298K</td><td class="num bad">-$3K</td></tr>
+        <tr><td class="gold mono">WS4</td><td>Demand &amp; Supply Planning</td>
+          <td class="num">$610K</td><td class="num">$524K</td><td class="num">$576K</td>
+          <td class="num bad">-$52K</td><td class="num bad">-$86K</td>
+          <td class="num">0.91</td><td class="num">0.86</td>
+          <td class="num">$890K</td><td class="num bad">-$80K</td></tr>
+        <tr><td class="gold mono">WS5</td><td>Financial Close Automation</td>
+          <td class="num">$215K</td><td class="num">$200K</td><td class="num">$208K</td>
+          <td class="num bad">-$8K</td><td class="num bad">-$15K</td>
+          <td class="num">0.96</td><td class="num">0.93</td>
+          <td class="num">$240K</td><td class="num bad">-$5K</td></tr>
+        <tr><td class="gold mono">WS6</td><td>Spyglass Production Dashboards</td>
+          <td class="num">$240K</td><td class="num">$232K</td><td class="num">$239K</td>
+          <td class="num bad">-$7K</td><td class="num bad">-$8K</td>
+          <td class="num">0.97</td><td class="num">0.94</td>
+          <td class="num">$444K</td><td class="num bad">-$12K</td></tr>
+        <tr><td class="gold mono">WS7</td><td>Redwood Migration</td>
+          <td class="num">$390K</td><td class="num">$394K</td><td class="num">$390K</td>
+          <td class="num good">+$4K</td><td class="num good">+$4K</td>
+          <td class="num">1.01</td><td class="num">0.98</td>
+          <td class="num">$415K</td><td class="num good">+$3K</td></tr>
+        <tr><td class="gold mono">WS8</td><td>AI Governance &amp; Training</td>
+          <td class="num">$165K</td><td class="num">$157K</td><td class="num">$165K</td>
+          <td class="num bad">-$8K</td><td class="num bad">-$8K</td>
+          <td class="num">0.95</td><td class="num">0.92</td>
+          <td class="num">$346K</td><td class="num bad">-$14K</td></tr>
+        <tr style="background: rgba(212,168,83,0.08);">
+          <td class="gold mono"><b>TOT</b></td><td><b>Program Total</b></td>
+          <td class="num"><b>$2.71M</b></td><td class="num"><b>$2.52M</b></td><td class="num"><b>$2.51M</b></td>
+          <td class="num good"><b>+$10K</b></td><td class="num bad"><b>-$190K</b></td>
+          <td class="num"><b>0.96</b></td><td class="num"><b>0.93</b></td>
+          <td class="num"><b>$3.74M</b></td><td class="num bad"><b>-$140K</b></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid g-2 mt-12">
+    <div class="panel">
+      <h2>CPI Trend by Workstream</h2>
+      <div class="sub">Last 8 weeks <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartCPITrend"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>SPI Trend by Workstream</h2>
+      <div class="sub">Last 8 weeks <span class="src smartsheet">SMARTSHEET</span></div>
+      <div class="chart-wrap"><canvas id="chartSPITrend"></canvas></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 5 : SPRINTS BY PHASE & WORKSTREAM
+============================================================ -->
+<section id="sprints" class="tab-pane">
+
+  <div class="kpi-row">
+    <div class="kpi good"><div class="label">Sprints completed</div><div class="value">22 / 36</div><div class="target">Across program</div></div>
+    <div class="kpi good"><div class="label">Active sprints</div><div class="value">6</div><div class="target">All Phase 3</div></div>
+    <div class="kpi warn"><div class="label">Carryover items</div><div class="value">17</div><div class="target">From sprint 21</div></div>
+    <div class="kpi good"><div class="label">PR cycle time (avg)</div><div class="value">1.8<span class="unit">d</span></div><div class="target">Target ≤ 2.0d</div></div>
+    <div class="kpi good"><div class="label">UAT pass rate</div><div class="value">91<span class="unit">%</span></div><div class="target">Target 90%</div></div>
+    <div class="kpi warn"><div class="label">Spillover %</div><div class="value">12<span class="unit">%</span></div><div class="target">Target ≤ 10%</div></div>
+  </div>
+
+  <!-- Phase 3 active sprints -->
+  <div class="phase-block">
+    <div class="phase-header">
+      <div class="ph-name">PHASE 3 · OPTIMIZE</div>
+      <div class="ph-meta">Mar 2026 to Jun 2026 &middot; 12 sprints &middot; <span class="gold">6 active</span></div>
+      <span class="src jira" style="margin-left:auto">JIRA</span>
+    </div>
+    <div class="sprint-grid">
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 22</div><div class="sc-ws">WS1 · INV SYNC</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Auto-recon precision uplift</div>
+        <div class="sc-bar"><div class="fill" style="width: 76%; background: var(--status-good);"></div></div>
+        <div class="sc-stats">
+          <span><b>34</b> / 44 pts</span>
+          <span>3 carry</span>
+          <span class="muted">SPR 22 of 28</span>
+        </div>
+      </div>
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 22</div><div class="sc-ws">WS2 · MDM</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Routing &amp; work def cleanup</div>
+        <div class="sc-bar"><div class="fill" style="width: 58%; background: var(--status-warn);"></div></div>
+        <div class="sc-stats">
+          <span><b>22</b> / 38 pts</span>
+          <span class="warn">5 carry</span>
+          <span class="muted">SPR 22 of 28</span>
+        </div>
+      </div>
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 22</div><div class="sc-ws">WS4 · D&amp;S PLAN</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Hypertuning prereqs</div>
+        <div class="sc-bar"><div class="fill" style="width: 41%; background: var(--status-bad);"></div></div>
+        <div class="sc-stats">
+          <span><b>18</b> / 44 pts</span>
+          <span class="bad">9 carry</span>
+          <span class="muted">SPR 22 of 28</span>
+        </div>
+      </div>
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 22</div><div class="sc-ws">WS5 · FIN CLOSE</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Inventory subledger recon</div>
+        <div class="sc-bar"><div class="fill" style="width: 70%; background: var(--status-good);"></div></div>
+        <div class="sc-stats">
+          <span><b>28</b> / 40 pts</span>
+          <span>2 carry</span>
+          <span class="muted">SPR 22 of 28</span>
+        </div>
+      </div>
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 12</div><div class="sc-ws">WS6 · SPYGLASS</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Control tower v0.4</div>
+        <div class="sc-bar"><div class="fill" style="width: 64%; background: var(--status-good);"></div></div>
+        <div class="sc-stats">
+          <span><b>26</b> / 40 pts</span>
+          <span>2 carry</span>
+          <span class="muted">SPR 12 of 18</span>
+        </div>
+      </div>
+
+      <div class="sprint-card">
+        <div class="sc-head"><div class="sc-id">SPR 14</div><div class="sc-ws">WS8 · GOV &amp; TRAIN</div></div>
+        <div class="sc-meta">Apr 21 to May 4 &middot; Persona training &amp; agent reg.</div>
+        <div class="sc-bar"><div class="fill" style="width: 53%; background: var(--status-warn);"></div></div>
+        <div class="sc-stats">
+          <span><b>22</b> / 42 pts</span>
+          <span class="warn">4 carry</span>
+          <span class="muted">SPR 14 of 22</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2 closed -->
+  <div class="phase-block">
+    <div class="phase-header">
+      <div class="ph-name">PHASE 2 · ACTIVATE</div>
+      <div class="ph-meta">Nov 2025 to Feb 2026 &middot; 8 sprints &middot; <span class="good">closed at SG3</span></div>
+    </div>
+    <div class="sprint-grid">
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 14-21</div><div class="sc-ws">WS1 · INV SYNC</div></div><div class="sc-meta">Production readiness &amp; agent rollout</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>312</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 14-21</div><div class="sc-ws">WS2 · MDM</div></div><div class="sc-meta">Item attribution baseline</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>284</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 14-21</div><div class="sc-ws">WS3 · REPORTING</div></div><div class="sc-meta">Library v1, governance defined</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>198</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 14-21</div><div class="sc-ws">WS7 · REDWOOD</div></div><div class="sc-meta">UX migration &amp; embedded AI feature catalog</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>356</b> pts done</span><span class="good">DoD met</span></div></div>
+    </div>
+  </div>
+
+  <!-- Phase 1 closed -->
+  <div class="phase-block">
+    <div class="phase-header">
+      <div class="ph-name">PHASE 1 · FOUNDATION</div>
+      <div class="ph-meta">Jul 2025 to Oct 2025 &middot; 8 sprints &middot; <span class="good">closed at SG2</span></div>
+    </div>
+    <div class="sprint-grid">
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 6-13</div><div class="sc-ws">WS1 · INV SYNC</div></div><div class="sc-meta">Auto-recon agent design &amp; HITL workflow</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>248</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 6-13</div><div class="sc-ws">WS3 · REPORTING</div></div><div class="sc-meta">KPI canonicalization &amp; Excel deprecation</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>176</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 6-13</div><div class="sc-ws">WS4 · D&amp;S PLAN</div></div><div class="sc-meta">Demand signal audit, MAPE decomp</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>222</b> pts done</span><span class="good">DoD met</span></div></div>
+      <div class="sprint-card"><div class="sc-head"><div class="sc-id">SPR 6-13</div><div class="sc-ws">WS7 · REDWOOD</div></div><div class="sc-meta">Migration prep, environment strategy</div><div class="sc-bar"><div class="fill" style="width:100%"></div></div><div class="sc-stats"><span><b>164</b> pts done</span><span class="good">DoD met</span></div></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 6 : KPI & OUTCOMES
+============================================================ -->
+<section id="kpis" class="tab-pane">
+
+  <div class="kpi-row">
+    <div class="kpi good"><div class="label">OTIF MTD</div><div class="value">93.4<span class="unit">%</span></div><div class="delta up">+0.6 pts wk</div><div class="target">Target 95.0%</div></div>
+    <div class="kpi good"><div class="label">Inventory Sync acc.</div><div class="value">98.2<span class="unit">%</span></div><div class="delta up">+1.8 pts</div><div class="target">Target 99.0%</div></div>
+    <div class="kpi good"><div class="label">Forecast MAPE</div><div class="value">14.6<span class="unit">%</span></div><div class="delta up">-2.4 pts</div><div class="target">Target ≤ 13.5%</div></div>
+    <div class="kpi warn"><div class="label">Close Cycle</div><div class="value">5.2<span class="unit">d</span></div><div class="delta up">-1.4 d</div><div class="target">Target 4.0 d</div></div>
+    <div class="kpi good"><div class="label">Exception SLA</div><div class="value">96.1<span class="unit">%</span></div><div class="delta up">+0.4 pts</div><div class="target">Target 95.0%</div></div>
+    <div class="kpi good"><div class="label">Planner Touch</div><div class="value">-42<span class="unit">%</span></div><div class="delta up">vs baseline</div><div class="target">Target -50%</div></div>
+  </div>
+
+  <div class="grid g-2">
+    <div class="panel">
+      <h2>OTIF Trend</h2>
+      <div class="sub">Daily, last 90 days <span class="src oracle">ORACLE</span></div>
+      <div class="chart-wrap"><canvas id="chartOTIF"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>KPI Progress vs Stage Gate Targets</h2>
+      <div class="sub">Phase 3 incentive triggers <span class="src oracle">ORACLE</span></div>
+
+      <div class="bar-row">
+        <div class="label">OTIF (target 95%)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 93.4%; background: var(--status-good);"></div>
+          <div class="target-marker" style="left: 95%;"></div>
+        </div>
+        <div class="num">93.4%</div>
+      </div>
+      <div class="bar-row">
+        <div class="label">Inventory accuracy (99%)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 98.2%; background: var(--status-good);"></div>
+          <div class="target-marker" style="left: 99%;"></div>
+        </div>
+        <div class="num">98.2%</div>
+      </div>
+      <div class="bar-row">
+        <div class="label">MAPE (≤ 13.5%)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 76%; background: var(--status-warn);"></div>
+          <div class="target-marker" style="left: 70%;"></div>
+        </div>
+        <div class="num">14.6%</div>
+      </div>
+      <div class="bar-row">
+        <div class="label">Close cycle (≤ 4.0 d)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 65%; background: var(--status-warn);"></div>
+          <div class="target-marker" style="left: 75%;"></div>
+        </div>
+        <div class="num">5.2 d</div>
+      </div>
+      <div class="bar-row">
+        <div class="label">Exception SLA (95%)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 96.1%; background: var(--status-good);"></div>
+          <div class="target-marker" style="left: 95%;"></div>
+        </div>
+        <div class="num">96.1%</div>
+      </div>
+      <div class="bar-row">
+        <div class="label">Planner touch reduction (-50%)</div>
+        <div class="bar-wrap">
+          <div class="bar" style="width: 84%; background: var(--status-good);"></div>
+          <div class="target-marker" style="left: 100%;"></div>
+        </div>
+        <div class="num">-42%</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="div"/>
+
+  <div class="panel">
+    <h2>Outcome Achievement</h2>
+    <div class="sub">11 outcomes from AI readiness assessment <span class="src oracle">ORACLE</span></div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>#</th><th>Outcome</th><th>Owning WS</th>
+          <th class="num">Baseline</th><th class="num">Current</th><th class="num">Target</th>
+          <th>Status</th><th>Incentive</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>O1</td><td>Inventory accuracy lift</td><td>WS1, WS2</td><td class="num">96.4%</td><td class="num">98.2%</td><td class="num">99.0%</td><td><span class="chip green">On track</span></td><td>$30K earned</td></tr>
+        <tr><td>O2</td><td>Forecast MAPE reduction</td><td>WS4</td><td class="num">17.0%</td><td class="num">14.6%</td><td class="num">13.5%</td><td><span class="chip amber">Risk</span></td><td>Pending SG4</td></tr>
+        <tr><td>O3</td><td>OTIF lift</td><td>WS1, WS4, WS5</td><td class="num">90.6%</td><td class="num">93.4%</td><td class="num">95.0%</td><td><span class="chip green">On track</span></td><td>$45K earned</td></tr>
+        <tr><td>O4</td><td>Expedite spend reduction</td><td>WS1, WS4</td><td class="num">$1.05M</td><td class="num">$0.61M YTD</td><td class="num">-15% ann.</td><td><span class="chip green">On track</span></td><td>$25K earned</td></tr>
+        <tr><td>O5</td><td>Close cycle compression</td><td>WS5</td><td class="num">6.6 d</td><td class="num">5.2 d</td><td class="num">4.0 d</td><td><span class="chip amber">Risk</span></td><td>Pending SG4</td></tr>
+        <tr><td>O6</td><td>Exception MTTR reduction</td><td>WS6</td><td class="num">42 hr</td><td class="num">28 hr</td><td class="num">25 hr</td><td><span class="chip green">On track</span></td><td>$15K earned</td></tr>
+        <tr><td>O7</td><td>Planner touch reduction</td><td>WS4</td><td class="num">100%</td><td class="num">58% (-42%)</td><td class="num">50% (-50%)</td><td><span class="chip green">On track</span></td><td>$10K earned</td></tr>
+        <tr><td>O8</td><td>Working capital release</td><td>WS1, WS4</td><td class="num">$22.4M</td><td class="num">$21.0M</td><td class="num">-5% ($21.3M)</td><td><span class="chip green">Met</span></td><td>$10K earned</td></tr>
+        <tr><td>O9</td><td>Adoption (active users)</td><td>WS8</td><td class="num">38%</td><td class="num">71%</td><td class="num">85%</td><td><span class="chip amber">Risk</span></td><td>Pending SG4</td></tr>
+        <tr><td>O10</td><td>Agent governance compliance</td><td>WS8</td><td class="num">n/a</td><td class="num">100%</td><td class="num">100%</td><td><span class="chip green">Met</span></td><td>$0K (gate)</td></tr>
+        <tr><td>O11</td><td>Data platform readiness</td><td>WS2</td><td class="num">62%</td><td class="num">88%</td><td class="num">95%</td><td><span class="chip green">On track</span></td><td>$0K (gate)</td></tr>
+      </tbody>
+    </table>
+    <div class="note mt-12">Earned to date $135K of $210K incentive pool. Two outcomes (MAPE, Close Cycle) on amber pending Phase 3 closeout. Adoption (O9) is the WS8 priority for the next two sprints.</div>
+  </div>
+
+</section>
+
+<!-- ============================================================
+     TAB 7 : STEERCO STATUS
+============================================================ -->
+<section id="steerco" class="tab-pane">
+
+  <input type="radio" name="subtab" id="sub-status"  class="subtab-radio" checked />
+  <input type="radio" name="subtab" id="sub-raid"    class="subtab-radio" />
+  <input type="radio" name="subtab" id="sub-weekly"  class="subtab-radio" />
+  <input type="radio" name="subtab" id="sub-actions" class="subtab-radio" />
+  <input type="radio" name="subtab" id="sub-roi"     class="subtab-radio" />
+
+  <div class="subtabs">
+    <label for="sub-status">◆ Status</label>
+    <label for="sub-raid">⚠ RAID Log</label>
+    <label for="sub-weekly">◷ Weekly Summaries</label>
+    <label for="sub-actions">✓ Actions</label>
+    <label for="sub-roi">$ ROI</label>
+  </div>
+
+  <div class="subtab-body">
+
+    <!-- ===== STATUS ===== -->
+    <div id="sub-status-pane" class="subtab-pane">
+      <div class="grid g-3" style="grid-template-columns: 1.4fr 1fr 1fr;">
+        <div class="panel warn">
+          <h2>Program Health</h2>
+          <div class="sub">Reported to SteerCo bi-weekly</div>
+          <table class="data">
+            <thead><tr><th>Lens</th><th>Status</th><th>Headline</th></tr></thead>
+            <tbody>
+              <tr><td>Scope</td><td><span class="chip green">G</span></td><td>9 workstreams in flight, no scope additions</td></tr>
+              <tr><td>Schedule</td><td><span class="chip amber">A</span></td><td>SPI 0.93, Phase 3 forecast +11 days</td></tr>
+              <tr><td>Cost</td><td><span class="chip green">G</span></td><td>CPI 0.96, EAC $3.74M vs BAC $3.60M</td></tr>
+              <tr><td>Quality</td><td><span class="chip green">G</span></td><td>Defect escape 2.1%, UAT pass 91%</td></tr>
+              <tr><td>Risk</td><td><span class="chip red">R</span></td><td>R-014 WS4 hypertuning blocked, R-021 WS6 dependency</td></tr>
+              <tr><td>Resource</td><td><span class="chip green">G</span></td><td>Fully staffed, SI T&amp;M cap not yet breached</td></tr>
+              <tr><td>Adoption</td><td><span class="chip amber">A</span></td><td>71% active, target 85% by SG4</td></tr>
+              <tr><td>Governance</td><td><span class="chip green">G</span></td><td>AI Operating Model in compliance, agent registry current</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h2>Stage Gate Posture</h2>
+          <div class="sub">Phase 3 close out criteria</div>
+          <div style="display:grid; gap:8px; margin-top:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-good); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-1</b> &middot; OTIF lift &gt; 93%</div><span class="chip green">MET</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-warn); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-2</b> &middot; MAPE &le; 13.5%</div><span class="chip amber">RISK</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-good); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-3</b> &middot; Inventory acc &gt; 98%</div><span class="chip green">MET</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-warn); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-4</b> &middot; Close cycle &le; 4.5 d</div><span class="chip amber">RISK</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-warn); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-5</b> &middot; Adoption &gt; 80%</div><span class="chip amber">RISK</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 10px; background: var(--bg-deep); border-left: 3px solid var(--status-good); border-radius: 0 3px 3px 0;">
+              <div><b>SG4-6</b> &middot; Agent governance compliant</div><span class="chip green">MET</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel bad">
+          <h2>Decisions Required</h2>
+          <div class="sub">For next SteerCo &middot; May 8</div>
+          <details class="drill" open>
+            <summary><span><span class="chip red">D-007</span> &nbsp; Approve WS4 mitigation: classical baseline for 3 item families</span></summary>
+            <div class="body">Recommendation: approve. Allows WS4 to keep momentum while demand history depth catches up. Owner: Pedro AG. Resource: 2 sprints.</div>
+          </details>
+          <details class="drill">
+            <summary><span><span class="chip amber">D-008</span> &nbsp; Endorse WS8 adoption playbook V2</span></summary>
+            <div class="body">Champion network expansion to Plant Floor and Finance Close. Adds $25K of WS8 effort, fully within contingency.</div>
+          </details>
+          <details class="drill">
+            <summary><span><span class="chip amber">D-009</span> &nbsp; Sign SI SOW V3 amendment</span></summary>
+            <div class="body">Convert remaining T&amp;M to fixed fee for Phase 3 closeout. Caps remaining exposure at $480K. Awaiting CFO signature.</div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== RAID LOG ===== -->
+    <div id="sub-raid-pane" class="subtab-pane">
+      <div class="panel">
+        <h2>RAID Log</h2>
+        <div class="sub">Risks, Assumptions, Issues, Dependencies <span class="src smartsheet">SMARTSHEET</span></div>
+
+        <div class="raid-row head">
+          <div>Type</div><div>ID</div><div>Description</div><div>Owner</div><div>Severity</div><div>Likelihood</div><div>Status</div>
+        </div>
+
+        <div class="raid-row">
+          <div><span class="chip red">RISK</span></div>
+          <div class="id-tag">R-014</div>
+          <div class="desc">WS4 hypertuning blocked by demand history depth (3 item families &lt; 18 mo)
+            <small>Mitigation: classical baseline for 3 families, hypertune at SG5</small></div>
+          <div>Pedro AG</div>
+          <div><span class="chip red">High</span></div>
+          <div><span class="chip red">High</span></div>
+          <div><span class="chip amber">Mitigating</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip red">RISK</span></div>
+          <div class="id-tag">R-021</div>
+          <div class="desc">WS6 dashboard activation contingent on WS7 stabilization 90 day mark
+            <small>Conditional go-live targeted for 2026-06-15</small></div>
+          <div>Chris Clark</div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip red">High</span></div>
+          <div><span class="chip amber">Tracked</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip amber">RISK</span></div>
+          <div class="id-tag">R-017</div>
+          <div class="desc">WS8 persona based adoption baseline incomplete for Plant Floor and Finance Close</div>
+          <div>Brianna</div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip amber">In flight</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip amber">RISK</span></div>
+          <div class="id-tag">R-019</div>
+          <div class="desc">Vendor SOW V3 amendment unsigned. Remaining Phase 3 T&amp;M exposure $480K
+            <small>CFO signature requested 2026-04-25</small></div>
+          <div>Tom Chartrand</div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip green">Low</span></div>
+          <div><span class="chip amber">Pending</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip amber">RISK</span></div>
+          <div class="id-tag">R-022</div>
+          <div class="desc">WS1 agent token spend +18% vs forecast
+            <small>Triage: prompt compression, response caching</small></div>
+          <div>Sasi</div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip amber">In flight</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip info">ISSUE</span></div>
+          <div class="id-tag">I-008</div>
+          <div class="desc">UAT environment data refresh failed twice in past two weeks
+            <small>Root cause: OIC orchestration timeout. Permanent fix in PR-244</small></div>
+          <div>Sasi</div>
+          <div><span class="chip amber">Med</span></div>
+          <div>n/a</div>
+          <div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip info">ISSUE</span></div>
+          <div class="id-tag">I-011</div>
+          <div class="desc">WS2 master data discrepancy between WMS and Fusion for 142 SKUs
+            <small>Reconciliation script run, manual review by SCM team underway</small></div>
+          <div>Pedro AG</div>
+          <div><span class="chip amber">Med</span></div>
+          <div>n/a</div>
+          <div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip muted">ASSUMP</span></div>
+          <div class="id-tag">A-005</div>
+          <div class="desc">Oracle 26B Agentic Apps GA targeted for May 2026
+            <small>WS6 design assumes GA by go-live. Backup: custom build path</small></div>
+          <div>Chris Clark</div>
+          <div><span class="chip amber">Med</span></div>
+          <div><span class="chip green">Low</span></div>
+          <div><span class="chip green">Holding</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip muted">ASSUMP</span></div>
+          <div class="id-tag">A-009</div>
+          <div class="desc">Champion network capacity sufficient for Phase 4 sustain mode</div>
+          <div>Brianna</div>
+          <div><span class="chip green">Low</span></div>
+          <div><span class="chip green">Low</span></div>
+          <div><span class="chip green">Holding</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip info">DEP</span></div>
+          <div class="id-tag">D-003</div>
+          <div class="desc">WS6 Spyglass go-live depends on WS7 Redwood stabilization (90 day quiet period)</div>
+          <div>Chris Clark</div>
+          <div><span class="chip amber">Med</span></div>
+          <div>n/a</div>
+          <div><span class="chip amber">In flight</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip info">DEP</span></div>
+          <div class="id-tag">D-006</div>
+          <div class="desc">WS5 Financial Close depends on WS2 master data cleanup completion</div>
+          <div>Brianna</div>
+          <div><span class="chip green">Low</span></div>
+          <div>n/a</div>
+          <div><span class="chip green">On track</span></div>
+        </div>
+        <div class="raid-row">
+          <div><span class="chip info">DEP</span></div>
+          <div class="id-tag">D-007</div>
+          <div class="desc">WS8 training content depends on Redwood feature catalog finalization (WS7)</div>
+          <div>Brianna</div>
+          <div><span class="chip green">Low</span></div>
+          <div>n/a</div>
+          <div><span class="chip green">On track</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WEEKLY SUMMARIES ===== -->
+    <div id="sub-weekly-pane" class="subtab-pane">
+      <div class="panel">
+        <h2>Weekly SteerCo Summaries</h2>
+        <div class="sub">Bi-weekly cadence &middot; chaired by Chris Clark</div>
+
+        <div class="weekly-list">
+
+          <div class="week-card">
+            <div class="wc-head">
+              <div class="wc-date">2026-04-24 &middot; SteerCo #25</div>
+              <div class="wc-attendees">Chartrand · Wood · Amador-Gates · Brianna · Sasi · CClark</div>
+            </div>
+            <div class="wc-section">
+              <h4>Headline</h4>
+              <ul><li>Phase 3 at 67% complete. CPI 0.96, SPI 0.93. Two amber stage gate criteria.</li></ul>
+            </div>
+            <div class="wc-section">
+              <h4>Decisions Made</h4>
+              <ul>
+                <li>Approved WS4 classical baseline mitigation for three item families (D-006).</li>
+                <li>Endorsed token budget review path for WS1 agents (R-022).</li>
+                <li>Deferred WS6 conditional go-live decision to next session pending WS7 stabilization read out.</li>
+              </ul>
+            </div>
+            <div class="wc-section">
+              <h4>New Risks Logged</h4>
+              <ul><li>R-022 WS1 agent token spend overrun (Med/Med).</li></ul>
+            </div>
+            <div class="wc-section">
+              <h4>Action Items Closed</h4>
+              <ul><li>3 of 8 actions closed since SteerCo #24. See Actions tab for current backlog.</li></ul>
+            </div>
+            <details class="drill mt-12">
+              <summary>Full minutes (45 min session)</summary>
+              <div class="body">
+                Chartrand opened with confirmation that the Spyglass program continues to track within the BAFO capped budget. CFO underwriting of the WS4 classical baseline mitigation was secured before the session. Wood reiterated the Phase 4 sustain mode commitment from Operations. Amador-Gates raised the master data discrepancy on 142 SKUs (I-011), with reconciliation script complete and manual review owned by SCM. Brianna walked through the persona based adoption gap for Plant Floor and Finance Close, with champion network expansion proposed as the path. Sasi presented the agent token spend trend with a triage path (prompt compression, response caching) targeted for closure within two sprints. Decisions D-007 (WS4 mitigation), D-008 (WS8 playbook V2) and D-009 (SI SOW V3) routed for next session.
+              </div>
+            </details>
+          </div>
+
+          <div class="week-card">
+            <div class="wc-head">
+              <div class="wc-date">2026-04-10 &middot; SteerCo #24</div>
+              <div class="wc-attendees">Chartrand · Wood · Amador-Gates · Brianna · CClark · SI Lead</div>
+            </div>
+            <div class="wc-section">
+              <h4>Headline</h4>
+              <ul><li>WS7 Redwood entered stabilization. Embedded AI feature activation tracking on plan.</li></ul>
+            </div>
+            <div class="wc-section">
+              <h4>Decisions Made</h4>
+              <ul>
+                <li>Approved WS6 design freeze and dependency tracking against WS7 stabilization.</li>
+                <li>Approved Phase 3 incentive payout schedule for outcomes O1, O3, O4, O6, O7, O8.</li>
+              </ul>
+            </div>
+            <details class="drill mt-12">
+              <summary>Full minutes (52 min session)</summary>
+              <div class="body">
+                SI Lead briefed on capacity for the remainder of Phase 3. WS7 stabilization owners confirmed two consecutive clean weeks of incident free operation. Brianna reported persona based adoption baseline at 71% with a path to 85% by SG4. Chartrand asked for a hard cap on agent infrastructure spend separate from the SI budget. Action recorded for CClark to bring back a token cost forecast at the next session.
+              </div>
+            </details>
+          </div>
+
+          <div class="week-card">
+            <div class="wc-head">
+              <div class="wc-date">2026-03-27 &middot; SteerCo #23</div>
+              <div class="wc-attendees">Chartrand · Wood · Amador-Gates · Brianna · Sasi · CClark</div>
+            </div>
+            <div class="wc-section">
+              <h4>Headline</h4>
+              <ul><li>WS7 Redwood Phase 2 exit on plan. WS4 demand signal audit surfaced 3 deficient item families.</li></ul>
+            </div>
+            <div class="wc-section">
+              <h4>Decisions Made</h4>
+              <ul>
+                <li>Phase 2 closed at SG3 on time. SG3 retrospective scheduled.</li>
+                <li>WS4 mitigation triage routed to Pedro AG for proposal at SteerCo #24.</li>
+              </ul>
+            </div>
+            <details class="drill mt-12">
+              <summary>Full minutes (48 min session)</summary>
+              <div class="body">
+                Chartrand commended the team on a clean SG3 close out. Wood stressed that WS4 deficiencies must not create a cascade into WS6 timing. Sasi briefed on OIC orchestration stability post Phase 2 cutover. The session ended with a unanimous SG3 sign off.
+              </div>
+            </details>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ACTIONS ===== -->
+    <div id="sub-actions-pane" class="subtab-pane">
+      <div class="panel">
+        <h2>Actions Log</h2>
+        <div class="sub">Cross-meeting tracker &middot; current backlog 17 open / 9 closed past 30d <span class="src smartsheet">SMARTSHEET</span></div>
+
+        <div class="action-row head">
+          <div>ID</div><div>Action</div><div>Owner</div><div>Source</div><div>Due</div><div>Status</div>
+        </div>
+
+        <div class="action-row">
+          <div class="id-tag">A-101</div>
+          <div>Bring back agent token cost forecast and proposed cap to SteerCo #26</div>
+          <div>Chris Clark</div><div>SteerCo #24</div><div>2026-05-08</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-102</div>
+          <div>Run WS4 demand signal audit refresh against latest 6 weeks of data</div>
+          <div>Pedro AG</div><div>SteerCo #25</div><div>2026-05-15</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-103</div>
+          <div>Champion network expansion playbook for Plant Floor and Finance Close</div>
+          <div>Brianna</div><div>SteerCo #25</div><div>2026-05-22</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-104</div>
+          <div>SI SOW V3 amendment review and CFO signature</div>
+          <div>Tom Chartrand</div><div>SteerCo #25</div><div>2026-05-08</div><div><span class="chip red">At risk</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-105</div>
+          <div>WS6 conditional go-live decision package for SteerCo #26</div>
+          <div>Chris Clark</div><div>SteerCo #25</div><div>2026-05-08</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-106</div>
+          <div>UAT environment refresh permanent fix (PR-244 merge and validate)</div>
+          <div>Sasi</div><div>SteerCo #25</div><div>2026-05-12</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-107</div>
+          <div>Master data reconciliation: 142 SKU manual review with SCM</div>
+          <div>Pedro AG</div><div>SteerCo #25</div><div>2026-05-09</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-108</div>
+          <div>Phase 4 sustain mode org design draft</div>
+          <div>Dan Wood</div><div>SteerCo #24</div><div>2026-05-22</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-109</div>
+          <div>Vendor handoff documentation for Phase 4 (SI exit plan)</div>
+          <div>SI Lead</div><div>SteerCo #24</div><div>2026-06-05</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-110</div>
+          <div>Refresh ROI model with realized outcomes O1, O3, O4, O6, O7, O8</div>
+          <div>Chris Clark</div><div>SteerCo #25</div><div>2026-05-15</div><div><span class="chip amber">In progress</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-097</div>
+          <div>WS7 stabilization 60 day report</div>
+          <div>Sasi</div><div>SteerCo #23</div><div>2026-04-22</div><div><span class="chip green">Closed</span></div>
+        </div>
+        <div class="action-row">
+          <div class="id-tag">A-095</div>
+          <div>Phase 3 incentive payout schedule for outcomes met</div>
+          <div>Brianna</div><div>SteerCo #23</div><div>2026-04-19</div><div><span class="chip green">Closed</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ROI ===== -->
+    <div id="sub-roi-pane" class="subtab-pane">
+
+      <div class="kpi-row">
+        <div class="kpi good"><div class="label">Modeled 3-yr value</div><div class="value">$3.0-5.0<span class="unit">M</span></div><div class="target">Business case range</div></div>
+        <div class="kpi good"><div class="label">Realized YTD</div><div class="value">$1.18<span class="unit">M</span></div><div class="delta up">vs $0.95M plan</div></div>
+        <div class="kpi good"><div class="label">Forecast 3-yr</div><div class="value">$4.42<span class="unit">M</span></div><div class="target">Mid-band of model</div></div>
+        <div class="kpi good"><div class="label">Program cost</div><div class="value">$3.74<span class="unit">M</span></div><div class="target">EAC</div></div>
+        <div class="kpi good"><div class="label">Net 3-yr value</div><div class="value">$0.68<span class="unit">M</span></div><div class="target">Forecast - EAC</div></div>
+        <div class="kpi good"><div class="label">Payback</div><div class="value">28<span class="unit">mo</span></div><div class="delta up">vs 36 mo plan</div></div>
+      </div>
+
+      <div class="grid g-2">
+        <div class="panel">
+          <h2>Realized vs Forecast Value</h2>
+          <div class="sub">Cumulative quarterly &middot; modeled bands shown</div>
+          <div class="chart-wrap"><canvas id="chartROI"></canvas></div>
+        </div>
+
+        <div class="panel">
+          <h2>Value by Driver</h2>
+          <div class="sub">Realized YTD plus forecast to year three</div>
+          <table class="data">
+            <thead><tr><th>Driver</th><th class="num">Realized YTD</th><th class="num">Year 1 fcst</th><th class="num">Year 2 fcst</th><th class="num">Year 3 fcst</th><th class="num">Total</th></tr></thead>
+            <tbody>
+              <tr><td>Inventory reduction (working capital)</td><td class="num">$340K</td><td class="num">$520K</td><td class="num">$640K</td><td class="num">$680K</td><td class="num">$1.84M</td></tr>
+              <tr><td>Expedite avoidance</td><td class="num">$210K</td><td class="num">$340K</td><td class="num">$420K</td><td class="num">$450K</td><td class="num">$1.21M</td></tr>
+              <tr><td>Labor productivity (planning &amp; finance)</td><td class="num">$280K</td><td class="num">$390K</td><td class="num">$470K</td><td class="num">$490K</td><td class="num">$1.35M</td></tr>
+              <tr><td>Exception cycle reduction</td><td class="num">$140K</td><td class="num">$220K</td><td class="num">$280K</td><td class="num">$300K</td><td class="num">$0.80M</td></tr>
+              <tr><td>Margin protection (service reliability)</td><td class="num">$210K</td><td class="num">$320K</td><td class="num">$410K</td><td class="num">$440K</td><td class="num">$1.17M</td></tr>
+              <tr style="background: rgba(212,168,83,0.08);"><td><b>Total</b></td><td class="num"><b>$1.18M</b></td><td class="num"><b>$1.79M</b></td><td class="num"><b>$2.22M</b></td><td class="num"><b>$2.36M</b></td><td class="num"><b>$6.37M</b></td></tr>
+            </tbody>
+          </table>
+          <div class="note mt-12">Cumulative 3-year forecast of $6.37M is above the modeled mid-band of $4.42M, driven by stronger than expected inventory reduction and expedite avoidance lift.</div>
+        </div>
+      </div>
+
+      <hr class="div"/>
+
+      <div class="panel">
+        <h2>Outcome to Value Bridge</h2>
+        <div class="sub">Each outcome mapped to a dollar lever and current realization</div>
+        <table class="data">
+          <thead><tr><th>Outcome</th><th>$ Lever</th><th class="num">Realized YTD</th><th class="num">YTD Plan</th><th class="num">Variance</th><th>Confidence</th></tr></thead>
+          <tbody>
+            <tr><td>Inventory accuracy lift (O1)</td><td>Working capital release</td><td class="num">$340K</td><td class="num">$280K</td><td class="num good">+$60K</td><td><span class="chip green">High</span></td></tr>
+            <tr><td>OTIF lift (O3)</td><td>Margin protection</td><td class="num">$210K</td><td class="num">$180K</td><td class="num good">+$30K</td><td><span class="chip green">High</span></td></tr>
+            <tr><td>Expedite spend reduction (O4)</td><td>Expedite avoidance</td><td class="num">$210K</td><td class="num">$160K</td><td class="num good">+$50K</td><td><span class="chip green">High</span></td></tr>
+            <tr><td>Close cycle compression (O5)</td><td>Labor productivity (Finance)</td><td class="num">$95K</td><td class="num">$110K</td><td class="num bad">-$15K</td><td><span class="chip amber">Med</span></td></tr>
+            <tr><td>Exception MTTR (O6)</td><td>Exception cycle reduction</td><td class="num">$140K</td><td class="num">$120K</td><td class="num good">+$20K</td><td><span class="chip green">High</span></td></tr>
+            <tr><td>Planner touch reduction (O7)</td><td>Labor productivity (Planning)</td><td class="num">$185K</td><td class="num">$200K</td><td class="num bad">-$15K</td><td><span class="chip amber">Med</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div>SPYGLASS PPM &middot; V1.0 &middot; PROTOTYPE &middot; FOR INTERNAL REVIEW</div>
+  <div class="legend">
+    <span><span class="dot" style="background: var(--status-good)"></span>Green</span>
+    <span><span class="dot" style="background: var(--status-warn)"></span>Amber</span>
+    <span><span class="dot" style="background: var(--status-bad)"></span>Red</span>
+  </div>
+  <div>SOURCES: ORACLE FUSION · SMARTSHEET · JIRA · STEERCO MINUTES</div>
+</footer>
+
+<div class="brand-mark">CHRIS CLARK</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// Common chart styling — match Spyglass control tower aesthetic
+Chart.defaults.color = '#C4B59A';
+Chart.defaults.font.family = "'Helvetica Neue', Arial, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = 'rgba(123,91,58,0.25)';
+
+const palette = {
+  gold: '#D4A853',
+  goldLt: '#F4C870',
+  cream: '#FAF5EC',
+  good: '#8FB98B',
+  goodStrong: '#3E7142',
+  warn: '#E38B55',
+  warnStrong: '#B8860B',
+  bad: '#D94A2B',
+  info: '#50808E',
+  d4: '#A26769',
+  d7: '#6B8E4E',
+};
+
+function gridOpts() {
+  return {
+    grid: { color: 'rgba(123,91,58,0.18)', drawBorder: false },
+    ticks: { color: '#8A7856' },
+  };
+}
+
+// 1) Cost curve PV vs EV vs AC
+new Chart(document.getElementById('chartCostCurve'), {
+  type: 'line',
+  data: {
+    labels: ['M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12','M13','M14','M15','M16','M17','M18'],
+    datasets: [
+      { label: 'PV (Plan)', data: [80,180,290,420,560,720,890,1080,1280,1490,1700,1920,2130,2350,2560,2780,3000,3600], borderColor: palette.gold, backgroundColor: 'rgba(212,168,83,0.12)', borderWidth: 1.5, fill: false, pointRadius: 0, tension: 0.25 },
+      { label: 'EV (Earned)', data: [70,170,275,400,540,700,860,1040,1220,1420,1620,1830,2030,2520, null,null,null,null], borderColor: palette.goldLt, backgroundColor: 'rgba(244,200,112,0.12)', borderWidth: 2, fill: false, pointRadius: 0, tension: 0.25 },
+      { label: 'AC (Actual)', data: [82,184,295,418,558,720,888,1075,1268,1480,1685,1900,2110,2510, null,null,null,null], borderColor: palette.bad, backgroundColor: 'rgba(217,74,43,0.10)', borderWidth: 2, fill: false, pointRadius: 0, tension: 0.25 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: {
+      x: gridOpts(),
+      y: { ...gridOpts(), ticks: { ...gridOpts().ticks, callback: v => '$' + v + 'K' } },
+    },
+  }
+});
+
+// 2) Spend by workstream
+new Chart(document.getElementById('chartSpendByWS'), {
+  type: 'bar',
+  data: {
+    labels: ['WS0','WS1','WS2','WS3','WS4','WS5','WS6','WS7','WS8'],
+    datasets: [
+      { label: 'Plan', data: [120,420,310,240,610,215,240,390,165], backgroundColor: 'rgba(212,168,83,0.45)', borderWidth: 0 },
+      { label: 'Actual', data: [118,415,303,230,576,208,239,390,165], backgroundColor: palette.gold, borderWidth: 0 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: {
+      x: gridOpts(),
+      y: { ...gridOpts(), ticks: { ...gridOpts().ticks, callback: v => '$' + v + 'K' } },
+    },
+  }
+});
+
+// 3) Spend by phase
+new Chart(document.getElementById('chartSpendByPhase'), {
+  type: 'bar',
+  data: {
+    labels: ['Phase 0','Phase 1','Phase 2','Phase 3','Phase 4'],
+    datasets: [
+      { label: 'Budget', data: [200,720,860,1380,440], backgroundColor: 'rgba(80,128,142,0.45)', borderWidth: 0 },
+      { label: 'Actual / Forecast', data: [205,710,855,820, 0], backgroundColor: palette.info, borderWidth: 0 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: {
+      x: gridOpts(),
+      y: { ...gridOpts(), ticks: { ...gridOpts().ticks, callback: v => '$' + v + 'K' } },
+    },
+  }
+});
+
+// 4) Cost mix doughnut
+new Chart(document.getElementById('chartCostMix'), {
+  type: 'doughnut',
+  data: {
+    labels: ['SI Labor (SI Partner)','Planning Platform','Internal labor','Oracle Agent Studio','OCI compute / tokens','Other vendors','Contingency'],
+    datasets: [{
+      data: [2184, 1868, 410, 98, 220, 419, 220],
+      backgroundColor: [palette.gold, palette.info, palette.goodStrong, palette.d4, palette.warn, palette.d7, '#8A7856'],
+      borderColor: '#3A2210', borderWidth: 2,
+    }],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'right', labels: { boxWidth: 10, padding: 8, font: { size: 10 } } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.label}: $${ctx.parsed}K` } }
+    },
+    cutout: '60%',
+  }
+});
+
+// 5) Burn-down
+new Chart(document.getElementById('chartBurnDown'), {
+  type: 'line',
+  data: {
+    labels: ['SPR15','SPR16','SPR17','SPR18','SPR19','SPR20','SPR21','SPR22','SPR23','SPR24','SPR25','SPR26'],
+    datasets: [
+      { label: 'Ideal burn', data: [412,378,344,310,275,240,206,172,138,103,69,0], borderColor: 'rgba(244,200,112,0.5)', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0, fill: false },
+      { label: 'Actual', data: [412,386,360,335,310,288,262,238,null,null,null,null], borderColor: palette.gold, backgroundColor: 'rgba(212,168,83,0.12)', borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: palette.goldLt, fill: false },
+      { label: 'Forecast', data: [null,null,null,null,null,null,null,238,210,180,138,82], borderColor: palette.warn, borderDash: [3,3], borderWidth: 2, pointRadius: 0, fill: false },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: gridOpts(), y: { ...gridOpts(), ticks: { ...gridOpts().ticks, callback: v => v + ' pts' } } },
+  }
+});
+
+// 6) Cumulative flow diagram
+new Chart(document.getElementById('chartCFD'), {
+  type: 'line',
+  data: {
+    labels: ['SPR15','SPR16','SPR17','SPR18','SPR19','SPR20','SPR21','SPR22'],
+    datasets: [
+      { label: 'Done', data: [0,26,52,77,102,124,150,174], borderColor: palette.good, backgroundColor: 'rgba(143,185,139,0.55)', fill: 'origin', tension: 0.2, pointRadius: 0 },
+      { label: 'In Progress', data: [40,55,68,72,84,98,108,124], borderColor: palette.gold, backgroundColor: 'rgba(212,168,83,0.45)', fill: '-1', tension: 0.2, pointRadius: 0 },
+      { label: 'Backlog', data: [412,386,360,335,310,288,262,238], borderColor: palette.bad, backgroundColor: 'rgba(217,74,43,0.30)', fill: '-1', tension: 0.2, pointRadius: 0 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: gridOpts(), y: { ...gridOpts(), stacked: false, ticks: { ...gridOpts().ticks, callback: v => v + ' pts' } } },
+  }
+});
+
+// 7) Velocity by squad
+new Chart(document.getElementById('chartVelocity'), {
+  type: 'bar',
+  data: {
+    labels: ['SPR17','SPR18','SPR19','SPR20','SPR21','SPR22'],
+    datasets: [
+      { label: 'WS1 Inv Sync', data: [42,40,44,42,38,34], backgroundColor: palette.gold },
+      { label: 'WS2 MDM',      data: [36,38,40,32,30,22], backgroundColor: palette.info },
+      { label: 'WS4 D&S Plan', data: [38,40,38,36,28,18], backgroundColor: palette.bad },
+      { label: 'WS5 Fin Close',data: [30,32,32,30,30,28], backgroundColor: palette.goodStrong },
+      { label: 'WS6 Spyglass', data: [22,28,32,32,28,26], backgroundColor: palette.d7 },
+      { label: 'WS8 Gov/Train',data: [20,24,28,30,24,22], backgroundColor: palette.d4 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: { ...gridOpts(), stacked: false }, y: { ...gridOpts(), beginAtZero: true, ticks: { ...gridOpts().ticks, callback: v => v + ' pts' } } },
+  }
+});
+
+// 8) CPI trend
+new Chart(document.getElementById('chartCPITrend'), {
+  type: 'line',
+  data: {
+    labels: ['Wk1','Wk2','Wk3','Wk4','Wk5','Wk6','Wk7','Wk8'],
+    datasets: [
+      { label: 'WS1', data: [1.00,0.99,0.98,0.99,0.98,0.97,0.97,0.97], borderColor: palette.gold, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS2', data: [0.98,0.97,0.96,0.95,0.95,0.94,0.94,0.94], borderColor: palette.warn, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS4', data: [0.96,0.95,0.94,0.93,0.92,0.92,0.91,0.91], borderColor: palette.bad, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS6', data: [0.99,0.99,0.98,0.98,0.97,0.97,0.97,0.97], borderColor: palette.d7, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS8', data: [0.97,0.97,0.96,0.96,0.95,0.95,0.95,0.95], borderColor: palette.info, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: gridOpts(), y: { ...gridOpts(), suggestedMin: 0.85, suggestedMax: 1.05 } },
+  }
+});
+
+// 9) SPI trend
+new Chart(document.getElementById('chartSPITrend'), {
+  type: 'line',
+  data: {
+    labels: ['Wk1','Wk2','Wk3','Wk4','Wk5','Wk6','Wk7','Wk8'],
+    datasets: [
+      { label: 'WS1', data: [0.99,0.98,0.97,0.97,0.96,0.96,0.96,0.96], borderColor: palette.gold, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS2', data: [0.96,0.95,0.94,0.93,0.93,0.92,0.92,0.92], borderColor: palette.warn, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS4', data: [0.94,0.92,0.90,0.89,0.88,0.87,0.86,0.86], borderColor: palette.bad, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS6', data: [0.97,0.96,0.96,0.95,0.95,0.94,0.94,0.94], borderColor: palette.d7, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+      { label: 'WS8', data: [0.95,0.94,0.94,0.93,0.93,0.92,0.92,0.92], borderColor: palette.info, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.3 },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: gridOpts(), y: { ...gridOpts(), suggestedMin: 0.80, suggestedMax: 1.02 } },
+  }
+});
+
+// 10) OTIF trend (90 days)
+const otifLabels = Array.from({length: 90}, (_, i) => `D${i+1}`);
+const otifData = otifLabels.map((_, i) => 90.6 + i * 0.032 + Math.sin(i / 4) * 0.9);
+new Chart(document.getElementById('chartOTIF'), {
+  type: 'line',
+  data: {
+    labels: otifLabels,
+    datasets: [
+      { label: 'OTIF', data: otifData, borderColor: palette.gold, backgroundColor: 'rgba(212,168,83,0.15)', borderWidth: 2, pointRadius: 0, fill: true, tension: 0.25 },
+      { label: 'Target 95%', data: otifLabels.map(() => 95), borderColor: palette.goldLt, borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, fill: false },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: {
+      x: { ...gridOpts(), ticks: { ...gridOpts().ticks, maxTicksLimit: 8 } },
+      y: { ...gridOpts(), suggestedMin: 88, suggestedMax: 100, ticks: { ...gridOpts().ticks, callback: v => v + '%' } },
+    },
+  }
+});
+
+// 11) ROI realized vs forecast
+new Chart(document.getElementById('chartROI'), {
+  type: 'line',
+  data: {
+    labels: ['Q1-26','Q2-26','Q3-26','Q4-26','Q1-27','Q2-27','Q3-27','Q4-27','Q1-28','Q2-28','Q3-28','Q4-28'],
+    datasets: [
+      { label: 'High band ($5M)', data: [80,260,500,800,1200,1700,2300,3000,3500,4000,4600,5000], borderColor: 'rgba(143,185,139,0.45)', borderDash: [6,4], borderWidth: 1.5, pointRadius: 0, fill: false },
+      { label: 'Low band ($3M)',  data: [40,140,280,460,720,1050,1400,1750,2050,2350,2700,3000], borderColor: 'rgba(217,74,43,0.45)', borderDash: [6,4], borderWidth: 1.5, pointRadius: 0, fill: false },
+      { label: 'Realized', data: [120,460,820,1180,null,null,null,null,null,null,null,null], borderColor: palette.gold, backgroundColor: 'rgba(212,168,83,0.18)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: palette.goldLt, fill: false },
+      { label: 'Forecast', data: [null,null,null,1180,1620,2080,2570,3070,3500,3900,4200,4420], borderColor: palette.goldLt, borderWidth: 2, borderDash: [3,3], pointRadius: 0, fill: false },
+    ],
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12 } } },
+    scales: { x: gridOpts(), y: { ...gridOpts(), ticks: { ...gridOpts().ticks, callback: v => '$' + v + 'K' } } },
+  }
+});
+</script>
+
+<script>
+// Hash-based tab deep linking. URLs like ppm.html#evm or ppm.html#steerco/raid pre-select.
+(function(){
+  var tabs = ['overview','spend','burn','evm','sprints','kpis','steerco'];
+  var subs = ['status','raid','weekly','actions','roi'];
+  function applyHash(){
+    var h = (location.hash || '').replace('#','').toLowerCase();
+    if (!h) return;
+    var parts = h.split('/');
+    if (tabs.indexOf(parts[0]) !== -1) {
+      var r = document.getElementById('tr-' + parts[0]);
+      if (r) r.checked = true;
+    }
+    if (parts.length > 1 && subs.indexOf(parts[1]) !== -1) {
+      var s = document.getElementById('sub-' + parts[1]);
+      if (s) s.checked = true;
+    }
+  }
+  applyHash();
+  window.addEventListener('hashchange', applyHash);
+  // Write hash on tab clicks
+  document.querySelectorAll('nav.tabs label').forEach(function(lbl){
+    lbl.addEventListener('click', function(){
+      var t = (lbl.getAttribute('for') || '').replace('tr-','');
+      if (tabs.indexOf(t) !== -1) history.replaceState(null,'','#'+t);
+    });
+  });
+  document.querySelectorAll('.subtabs label').forEach(function(lbl){
+    lbl.addEventListener('click', function(){
+      var s = (lbl.getAttribute('for') || '').replace('sub-','');
+      var current = (location.hash || '#steerco').replace('#','').split('/')[0];
+      if (subs.indexOf(s) !== -1) history.replaceState(null,'','#' + current + '/' + s);
+    });
+  });
+})();
+</script>
+</body>
+</html>
