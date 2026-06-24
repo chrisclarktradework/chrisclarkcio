@@ -48,6 +48,29 @@ header.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,25
 .btn-ghost:hover{border-color:var(--gold)}
 .menu-btn{display:none;background:none;border:0;cursor:pointer;font-size:24px;color:var(--ink)}
 
+/* SHOWCASE / CAROUSEL */
+.showcase{background:linear-gradient(160deg,#0A2540,#123a5c);color:#fff}
+.showcase .kick{color:var(--goldlt)}
+.showcase h2.sec{color:#fff}
+.showcase .lead{color:#C7D3DF}
+.carousel{position:relative;max-width:1060px;margin:34px auto 0;border-radius:16px;overflow:hidden;border:1px solid rgba(231,207,142,.42);box-shadow:0 24px 70px rgba(0,0,0,.45);background:var(--ink)}
+.track{display:flex;transition:transform .7s cubic-bezier(.6,.02,.2,1)}
+.cslide{position:relative;flex:0 0 100%;display:block;background:var(--ink);overflow:hidden}
+.cslide .frame{position:absolute;inset:0;overflow:hidden;background:var(--ink)}
+.cslide iframe{border:0;transform-origin:top left;pointer-events:none;background:var(--ink)}
+.cslide .ph2{position:absolute;inset:0;display:grid;place-items:center;color:var(--goldlt);font-family:var(--serif);font-size:20px;z-index:1}
+.cslide .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:40px 24px 18px;background:linear-gradient(transparent,rgba(10,37,64,.5) 38%,rgba(10,37,64,.95));display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
+.cslide .cap b{display:block;font-size:18px;color:#fff;font-family:var(--serif);font-weight:500}
+.cslide .cap span{font-size:13px;color:var(--goldlt)}
+.cslide .open{flex:0 0 auto;font-size:13px;font-weight:700;color:#0A1B2C;background:var(--gold);padding:9px 16px;border-radius:999px;white-space:nowrap}
+.cnav{position:absolute;top:50%;transform:translateY(-50%);z-index:4;width:42px;height:42px;border-radius:50%;border:1px solid rgba(231,207,142,.5);background:rgba(10,37,64,.66);color:#fff;font-size:22px;cursor:pointer;display:grid;place-items:center}
+.cnav:hover{background:var(--gold);color:#0A1B2C;border-color:var(--gold)}
+.cnav.prev{left:14px}.cnav.next{right:14px}
+.dots{display:flex;gap:9px;justify-content:center;margin-top:18px}
+.dots button{width:9px;height:9px;border-radius:50%;border:0;background:rgba(231,207,142,.35);cursor:pointer;padding:0;transition:.2s}
+.dots button.on{background:var(--gold);width:24px;border-radius:5px}
+@media(max-width:700px){.cslide .cap b{font-size:15px}.cslide .open{display:none}}
+
 /* HERO */
 .hero{position:relative;background:linear-gradient(160deg,#0A2540 0%,#0E2C49 55%,#123a5c 100%);color:#fff;padding:150px 0 90px;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-160px;top:-160px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(201,162,75,.20),transparent 62%)}
@@ -191,6 +214,7 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
       <div><b>Chris Clark</b><span>CIO · Chief AI Officer</span></div>
     </a>
     <nav class="nav-links" id="navlinks">
+      <a href="#dashboards-live">Dashboards</a>
       <a href="#outcomes">Outcomes</a>
       <a href="#toolkit">Recruiter Toolkit</a>
       <a href="#value">Capabilities</a>
@@ -219,6 +243,34 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
     <div class="portrait" id="portrait">
       <span class="ph">CC</span>
     </div>
+  </div>
+</section>
+
+<section id="dashboards-live" class="showcase">
+  <div class="wrap">
+    <span class="kick">Live Program Dashboards</span>
+    <h2 class="sec">See the work, not just the words</h2>
+    <div class="sec-rule"></div>
+    <p class="lead">Anonymized, fully interactive control towers I built and ran. Each tile is live — click to open the real dashboard.</p>
+    <div class="carousel" id="carousel">
+      <div class="track" id="track">
+        <a class="cslide" href="./spyglass.html" target="_blank" rel="noopener" aria-label="Open Supply Chain Control Tower">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./spyglass.html" loading="lazy" title="Supply Chain Control Tower" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>Supply Chain Control Tower</b><span>Spyglass · operations, OTIF 360, disruptions, scenarios</span></div><span class="open">Open live →</span></div>
+        </a>
+        <a class="cslide" href="./ppm.html" target="_blank" rel="noopener" aria-label="Open PPM Control Tower">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./ppm.html" loading="lazy" title="PPM Control Tower" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>PPM Control Tower</b><span>Spend, burn, earned value, sprints, KPIs, SteerCo</span></div><span class="open">Open live →</span></div>
+        </a>
+        <a class="cslide" href="./inventory-sync.html" target="_blank" rel="noopener" aria-label="Open Inventory Sync">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./inventory-sync.html" loading="lazy" title="Inventory Sync" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>Inventory Sync · WMS ↔ ERP</b><span>Plant-floor inventory synchronization and exceptions</span></div><span class="open">Open live →</span></div>
+        </a>
+      </div>
+      <button class="cnav prev" id="cprev" aria-label="Previous dashboard">‹</button>
+      <button class="cnav next" id="cnext" aria-label="Next dashboard">›</button>
+    </div>
+    <div class="dots" id="cdots"></div>
   </div>
 </section>
 
@@ -343,9 +395,9 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
     </div>
       <h3 class="dash-h">Live, interactive dashboards</h3>
     <div class="dash-grid">
-      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/spyglass.html" target="_blank" rel="noopener"><b>Spyglass &middot; Supply Chain Control Tower</b><span>Twelve-tab operations tower: flows, OTIF 360, SKU 360, disruptions and scenarios. &rarr;</span></a>
-      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/ppm.html" target="_blank" rel="noopener"><b>Spyglass &middot; PPM Control Tower</b><span>Spend, burn, earned value, sprints, KPIs and SteerCo status, RAID and ROI. &rarr;</span></a>
-      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/spyglass.html" target="_blank" rel="noopener"><b>Inventory Sync &middot; WMS &harr; ERP</b><span>Plant-floor inventory synchronization, live inside the operations control tower. &rarr;</span></a>
+      <a class="dash" href="./spyglass.html" target="_blank" rel="noopener"><b>Spyglass &middot; Supply Chain Control Tower</b><span>Twelve-tab operations tower: flows, OTIF 360, SKU 360, disruptions and scenarios. &rarr;</span></a>
+      <a class="dash" href="./ppm.html" target="_blank" rel="noopener"><b>Spyglass &middot; PPM Control Tower</b><span>Spend, burn, earned value, sprints, KPIs and SteerCo status, RAID and ROI. &rarr;</span></a>
+      <a class="dash" href="./inventory-sync.html" target="_blank" rel="noopener"><b>Inventory Sync &middot; WMS &harr; ERP</b><span>Plant-floor inventory synchronization, live inside the operations control tower. &rarr;</span></a>
     </div>
   </div>
 </section>
@@ -440,6 +492,31 @@ const spy=new IntersectionObserver((es)=>es.forEach(e=>{if(e.isIntersecting){con
 secs.forEach(s=>spy.observe(s));
 // optional headshot: if ./headshot.jpg exists, show it
 (function(){const p=document.getElementById('portrait');const img=new Image();img.onload=function(){p.innerHTML='';p.appendChild(img)};img.onerror=function(){};img.src='./headshot.jpg';img.alt='Chris Clark';})();
+
+(function(){
+  var track=document.getElementById('track'); if(!track) return;
+  var slides=[].slice.call(track.children), N=slides.length;
+  var dots=document.getElementById('cdots'), carousel=document.getElementById('carousel');
+  var i=0, timer;
+  slides.forEach(function(s,idx){var b=document.createElement('button'); if(idx===0)b.className='on'; b.addEventListener('click',function(){go(idx);reset();}); dots.appendChild(b);});
+  var dotEls=[].slice.call(dots.children);
+  function scaleFrames(){
+    var w=carousel.clientWidth, sc=w/1440, h=Math.round(w*0.60);
+    slides.forEach(function(s){ s.style.height=h+'px'; var f=s.querySelector('iframe');
+      f.style.width='1440px'; f.style.height=Math.round(h/sc)+'px'; f.style.transform='scale('+sc+')'; });
+  }
+  function load(idx){ var f=slides[idx].querySelector('iframe'); if(f && !f.src && f.getAttribute('data-src')){ f.src=f.getAttribute('data-src'); f.addEventListener('load',function(){var p=slides[idx].querySelector('.ph2'); if(p)p.style.display='none';}); } }
+  function go(n){ i=(n+N)%N; track.style.transform='translateX(-'+(i*100)+'%)'; dotEls.forEach(function(d,k){d.classList.toggle('on',k===i);}); load(i); load((i+1)%N); }
+  function reset(){ clearInterval(timer); timer=setInterval(function(){go(i+1);},5000); }
+  document.getElementById('cnext').addEventListener('click',function(){go(i+1);reset();});
+  document.getElementById('cprev').addEventListener('click',function(){go(i-1);reset();});
+  carousel.addEventListener('mouseenter',function(){clearInterval(timer);});
+  carousel.addEventListener('mouseleave',reset);
+  window.addEventListener('resize',scaleFrames);
+  scaleFrames(); load(0);
+  setTimeout(function(){load(1);load(2);},1600);
+  reset();
+})();
 </script>
 </body>
 </html>
