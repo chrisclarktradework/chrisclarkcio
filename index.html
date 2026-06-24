@@ -58,7 +58,7 @@ header.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,25
 .hero .title span{color:rgba(255,255,255,.5);margin:0 8px}
 .hero .tag{font-size:18px;color:#D7E0EA;max-width:560px;margin:22px 0 30px;line-height:1.55}
 .hero-cta{display:flex;flex-wrap:wrap;gap:14px}
-.hero-cta .btn-gold{background:var(--gold);color:#0A1B2C}
+.hero-cta .btn-gold{background:var(--gold);color:#fff}
 .hero-cta .btn-gold:hover{background:var(--gold2)}
 .hero-cta .btn-ghost{background:transparent;border-color:rgba(255,255,255,.3);color:#fff}
 .hero-cta .btn-ghost:hover{border-color:var(--goldlt);color:var(--goldlt)}
@@ -119,6 +119,13 @@ header.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,25
 .metrics .m{flex:1;min-width:90px}
 .metrics .m b{display:block;font-family:var(--serif);font-size:26px;color:var(--ink);font-weight:500}
 .metrics .m span{font-size:12px;color:var(--muted)}
+.dash-h{font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--deep);margin:38px 0 14px}
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.dash{display:flex;flex-direction:column;gap:7px;background:var(--ink);color:#fff;border-radius:var(--r);padding:22px;transition:.22s;border:1px solid transparent}
+.dash:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--gold)}
+.dash b{font-size:15.5px;color:#fff}
+.dash span{font-size:13px;color:var(--goldlt);line-height:1.4}
+@media(max-width:860px){.dash-grid{grid-template-columns:1fr}}
 
 /* EXPERIENCE */
 .tl{margin-top:44px;border-left:2px solid var(--line);padding-left:30px;display:flex;flex-direction:column;gap:34px}
@@ -153,7 +160,7 @@ header.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,25
 #contact .lead{color:#C7D3DF;margin:18px auto 0}
 .contact-cta{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-top:34px}
 .contact-cta a{display:inline-flex;align-items:center;gap:9px;font-weight:600;padding:13px 24px;border-radius:999px}
-.cc-gold{background:var(--gold);color:#0A1B2C}.cc-gold:hover{background:var(--gold2)}
+.cc-gold{background:var(--gold);color:#fff}.cc-gold:hover{background:var(--gold2)}
 .cc-ghost{border:1.5px solid rgba(255,255,255,.3);color:#fff}.cc-ghost:hover{border-color:var(--goldlt);color:var(--goldlt)}
 
 /* FOOTER */
@@ -231,7 +238,7 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
 <section id="toolkit">
   <div class="wrap">
     <span class="kick">Recruiter Toolkit</span>
-    <h2 class="sec">Everything you need to move me forward</h2>
+    <h2 class="sec">Executive Recruiter Quick Reference</h2>
     <div class="sec-rule"></div>
     <p class="lead">Purpose-built collateral for each stage of an executive search. First impressions are hard to undo, so each piece is made to count.</p>
 
@@ -334,6 +341,12 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
         <div class="chips"><span class="chip">Oracle Fusion</span><span class="chip">SAP S/4HANA</span><span class="chip">Earned Value</span><span class="chip">BAFO</span></div>
       </div>
     </div>
+      <h3 class="dash-h">Live, interactive dashboards</h3>
+    <div class="dash-grid">
+      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/spyglass.html" target="_blank" rel="noopener"><b>Spyglass &middot; Supply Chain Control Tower</b><span>Twelve-tab operations tower: flows, OTIF 360, SKU 360, disruptions and scenarios. &rarr;</span></a>
+      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/ppm.html" target="_blank" rel="noopener"><b>Spyglass &middot; PPM Control Tower</b><span>Spend, burn, earned value, sprints, KPIs and SteerCo status, RAID and ROI. &rarr;</span></a>
+      <a class="dash" href="https://chrisclarktradework.github.io/ai-program-portfolio/spyglass.html" target="_blank" rel="noopener"><b>Inventory Sync &middot; WMS &harr; ERP</b><span>Plant-floor inventory synchronization, live inside the operations control tower. &rarr;</span></a>
+    </div>
   </div>
 </section>
 
@@ -393,7 +406,7 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
 <section id="contact">
   <div class="wrap">
     <span class="kick" style="color:var(--goldlt)">Contact</span>
-    <h2 class="sec">Let's talk</h2>
+    <h2 class="sec">Get in touch</h2>
     <p class="lead">Open to CIO, Chief AI Officer, transformation and interim leadership roles. DC-based, open to fully remote with periodic travel.</p>
     <div class="contact-cta">
       <a class="cc-gold" href="mailto:chris.clark@clarkfamilyusa.com">✉ chris.clark@clarkfamilyusa.com</a>
