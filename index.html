@@ -48,13 +48,21 @@ header.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,25
 .btn-ghost:hover{border-color:var(--gold)}
 .menu-btn{display:none;background:none;border:0;cursor:pointer;font-size:24px;color:var(--ink)}
 
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
+.rec{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column}
+.rec .qm{font-family:var(--serif);font-size:44px;line-height:.5;color:var(--goldlt);margin-bottom:10px}
+.rec p{color:var(--slate);font-size:14.5px;flex:1;line-height:1.5}
+.rec cite{display:block;margin-top:16px;font-style:normal;border-top:1px solid var(--line);padding-top:12px}
+.rec cite b{display:block;color:var(--ink);font-size:14px}
+.rec cite span{color:var(--muted);font-size:12.5px}
+@media(max-width:860px){.rec-grid{grid-template-columns:1fr}}
 /* SHOWCASE / CAROUSEL */
 .showcase{background:linear-gradient(160deg,#0A2540,#123a5c);color:#fff}
 .showcase .kick{color:var(--goldlt)}
 .showcase h2.sec{color:#fff}
 .showcase .lead{color:#C7D3DF}
 .carousel{position:relative;max-width:1060px;margin:34px auto 0;border-radius:16px;overflow:hidden;border:1px solid rgba(231,207,142,.42);box-shadow:0 24px 70px rgba(0,0,0,.45);background:var(--ink)}
-.track{display:flex;transition:transform .7s cubic-bezier(.6,.02,.2,1)}
+.track{display:flex;transition:transform 1.1s cubic-bezier(.6,.02,.2,1)}
 .cslide{position:relative;flex:0 0 100%;display:block;background:var(--ink);overflow:hidden}
 .cslide .frame{position:absolute;inset:0;overflow:hidden;background:var(--ink)}
 .cslide iframe{border:0;transform-origin:top left;pointer-events:none;background:var(--ink)}
@@ -219,6 +227,7 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
       <a href="#toolkit">Toolkit</a>
       <a href="#value">Capabilities</a>
       <a href="#work">Work</a>
+      <a href="#recommendations">Praise</a>
       <a href="#experience">Experience</a>
       <a href="#contact">Contact</a>
       <a class="btn btn-gold" href="./Chris-Clark-CIO-CAIO-Resume.pdf" target="_blank">Download Résumé</a>
@@ -254,22 +263,23 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
     <p class="lead">Anonymized, fully interactive control towers I built and ran. Each tile is live — click to open the real dashboard.</p>
     <div class="carousel" id="carousel">
       <div class="track" id="track">
-        <a class="cslide" href="./spyglass.html" target="_blank" rel="noopener" aria-label="Open Supply Chain Control Tower">
-          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./spyglass.html" loading="lazy" title="Supply Chain Control Tower" scrolling="no"></iframe></div>
-          <div class="cap"><div><b>Supply Chain Control Tower</b><span>Spyglass · operations, OTIF 360, disruptions, scenarios</span></div><span class="open">Open live →</span></div>
+        <a class="cslide" href="./exec-daily.html" target="_blank" rel="noopener" aria-label="Open Executive Daily Brief">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./exec-daily.html" loading="lazy" title="Executive Daily Brief" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>Executive Daily Brief</b><span>Projects, markets, inbox, schedule, issue/resolution tracker</span></div><span class="open">Open live →</span></div>
         </a>
         <a class="cslide" href="./ppm.html" target="_blank" rel="noopener" aria-label="Open PPM Control Tower">
           <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./ppm.html" loading="lazy" title="PPM Control Tower" scrolling="no"></iframe></div>
           <div class="cap"><div><b>PPM Control Tower</b><span>Spend, burn, earned value, sprints, KPIs, SteerCo</span></div><span class="open">Open live →</span></div>
         </a>
+        <a class="cslide" href="./spyglass.html" target="_blank" rel="noopener" aria-label="Open Supply Chain Control Tower">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./spyglass.html" loading="lazy" title="Supply Chain Control Tower" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>Supply Chain Control Tower</b><span>Spyglass · operations, OTIF 360, disruptions, scenarios</span></div><span class="open">Open live →</span></div>
+        </a>
         <a class="cslide" href="./inventory-sync.html" target="_blank" rel="noopener" aria-label="Open Inventory Sync">
           <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./inventory-sync.html" loading="lazy" title="Inventory Sync" scrolling="no"></iframe></div>
           <div class="cap"><div><b>Inventory Sync · WMS ↔ ERP</b><span>Plant-floor inventory synchronization and exceptions</span></div><span class="open">Open live →</span></div>
         </a>
-        <a class="cslide" href="./exec-daily.html" target="_blank" rel="noopener" aria-label="Open Executive Daily Brief">
-          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./exec-daily.html" loading="lazy" title="Executive Daily Brief" scrolling="no"></iframe></div>
-          <div class="cap"><div><b>Executive Daily Brief</b><span>Projects, markets, inbox, schedule, issue/resolution tracker</span></div><span class="open">Open live →</span></div>
-        </a>
+      
       </div>
       <button class="cnav prev" id="cprev" aria-label="Previous dashboard">‹</button>
       <button class="cnav next" id="cnext" aria-label="Next dashboard">›</button>
@@ -406,6 +416,23 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
   </div>
 </section>
 
+<section id="recommendations">
+  <div class="wrap">
+    <span class="kick">Recommendations</span>
+    <h2 class="sec">In their words</h2>
+    <div class="sec-rule"></div>
+    <p class="lead">From the executives and colleagues who worked with me directly. The full set is on LinkedIn.</p>
+    <div class="rec-grid">
+      <blockquote class="rec"><div class="qm">“</div><p>I worked alongside Chris at Byrne Dairy. He is the rare technology leader who pairs deep technical mastery with genuine business judgment, and he is exceptionally professional and honest about what is real, what the risks are, and what it will take. Together we shipped successful AI implementations on our Oracle estate that moved real operational and financial numbers, and Chris drove them from idea to production with discipline and care.</p><cite><b>Pedro Amador Gates</b><span>Colleague, Byrne Dairy</span></cite></blockquote>
+      <blockquote class="rec"><div class="qm">“</div><p>Chris is an excellent technology leader who has a unique passion for success and achievement in everything he does. He takes a long-term approach that drives success in the organizations he works with, and he has been a great partner and team leader.</p><cite><b>Thomas Chartrand</b><span>CFO, Byrne Dairy</span></cite></blockquote>
+      <blockquote class="rec"><div class="qm">“</div><p>An exceptional strategist who never loses sight of the large goals and never takes “no” for an answer. A super-tough negotiator who will get the best deal and the best contractual terms. I would recommend Chris's leadership to any company that needs to modernize their technology.</p><cite><b>Magdalena Krol</b><span>ERP Implementation Consultant (Oracle, SAP, Workday)</span></cite></blockquote>
+      <blockquote class="rec"><div class="qm">“</div><p>There is a huge difference between being an expert in technology and being an expert in knowing how to use technology to deliver real-world impact. Chris is hands-down the best technology expert I've ever worked with because he knows how to make technology work for the good of the company and its customers.</p><cite><b>Michael Cooper</b><span>Communications & Brand Leader</span></cite></blockquote>
+      <blockquote class="rec"><div class="qm">“</div><p>Chris is an amazing CIO and an inspirational team leader. He really knew how to make senior management see IT as not a cost center but an enhancement to everyone's workflows. Anyone would be lucky to be led by him.</p><cite><b>Colleen Alaimo</b><span>IT Director</span></cite></blockquote>
+      <blockquote class="rec"><div class="qm">“</div><p>Chris re-organized the team for efficiency, solved nagging problems we had struggled with for years, and built short and long-term technology roadmaps. If your organization requires great business insight and technology leadership, I highly recommend Chris Clark.</p><cite><b>Ken Yancey</b><span>CEO, SCORE</span></cite></blockquote>
+    </div>
+  </div>
+</section>
+
 <section id="experience">
   <div class="wrap">
     <span class="kick">Experience</span>
@@ -501,14 +528,14 @@ secs.forEach(s=>spy.observe(s));
   var track=document.getElementById('track'); if(!track) return;
   var slides=[].slice.call(track.children), N=slides.length;
   var dots=document.getElementById('cdots'), carousel=document.getElementById('carousel');
-  var i=0, timer, sc=1, h=0, DWELL=8000, PAN=6800;
+  var i=0, timer, sc=1, h=0, DWELL=13000, PAN=6800;
   slides.forEach(function(s,idx){var b=document.createElement('button'); if(idx===0)b.className='on'; b.addEventListener('click',function(){go(idx);reset();}); dots.appendChild(b);});
   var dotEls=[].slice.call(dots.children);
   function fullH(s){var f=s.querySelector('iframe'); try{return (f.contentDocument&&f.contentDocument.body)?f.contentDocument.body.scrollHeight:0;}catch(e){return 0;}}
   function sizeOne(s){var f=s.querySelector('iframe'); var fh=f.getAttribute('data-fh'); f.style.width='1440px'; f.style.height=(fh?fh:Math.round(h/sc))+'px'; f.style.transformOrigin='top left'; f.style.transition='none'; f.style.transform='scale('+sc+') translateY(0px)';}
   function scaleFrames(){ var w=carousel.clientWidth; sc=w/1440; h=Math.round(w*0.60); slides.forEach(function(s){ s.style.height=h+'px'; sizeOne(s); }); pan(i); }
   function load(idx){ var f=slides[idx].querySelector('iframe'); if(f && !f.src && f.getAttribute('data-src')){ f.src=f.getAttribute('data-src'); f.addEventListener('load',function(){ var p=slides[idx].querySelector('.ph2'); if(p)p.style.display='none'; var fh=fullH(slides[idx]); if(fh){ f.setAttribute('data-fh',fh); f.style.height=fh+'px'; } if(idx===i) pan(i); }); } }
-  function pan(idx){ slides.forEach(function(s,k){ if(k!==idx){ var g=s.querySelector('iframe'); g.style.transition='none'; g.style.transform='scale('+sc+') translateY(0px)'; } }); var f=slides[idx].querySelector('iframe'); var fh=parseInt(f.getAttribute('data-fh')||'0',10); f.style.transition='none'; f.style.transform='scale('+sc+') translateY(0px)'; if(!fh) return; var maxScaled=Math.min(fh*sc-h, h*1.25); if(maxScaled<24) return; var tU=Math.round(maxScaled/sc); requestAnimationFrame(function(){ requestAnimationFrame(function(){ f.style.transition='transform '+PAN+'ms linear'; f.style.transform='scale('+sc+') translateY(-'+tU+'px)'; }); }); }
+  function pan(idx){ slides.forEach(function(s){ var g=s.querySelector("iframe"); if(g){ g.style.transition="none"; g.style.transform="scale("+sc+") translateY(0px)"; } }); }
   function go(n){ i=(n+N)%N; track.style.transform='translateX(-'+(i*100)+'%)'; dotEls.forEach(function(d,k){d.classList.toggle('on',k===i);}); load(i); load((i+1)%N); pan(i); }
   function reset(){ clearInterval(timer); timer=setInterval(function(){go(i+1);},DWELL); }
   document.getElementById('cnext').addEventListener('click',function(){go(i+1);reset();});
