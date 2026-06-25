@@ -266,6 +266,10 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:30px 0;font-size:13px}
           <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./inventory-sync.html" loading="lazy" title="Inventory Sync" scrolling="no"></iframe></div>
           <div class="cap"><div><b>Inventory Sync · WMS ↔ ERP</b><span>Plant-floor inventory synchronization and exceptions</span></div><span class="open">Open live →</span></div>
         </a>
+        <a class="cslide" href="./exec-daily.html" target="_blank" rel="noopener" aria-label="Open Executive Daily Brief">
+          <div class="frame"><div class="ph2">Loading live dashboard…</div><iframe data-src="./exec-daily.html" loading="lazy" title="Executive Daily Brief" scrolling="no"></iframe></div>
+          <div class="cap"><div><b>Executive Daily Brief</b><span>Projects, markets, inbox, schedule, issue/resolution tracker</span></div><span class="open">Open live →</span></div>
+        </a>
       </div>
       <button class="cnav prev" id="cprev" aria-label="Previous dashboard">‹</button>
       <button class="cnav next" id="cnext" aria-label="Next dashboard">›</button>
@@ -497,17 +501,16 @@ secs.forEach(s=>spy.observe(s));
   var track=document.getElementById('track'); if(!track) return;
   var slides=[].slice.call(track.children), N=slides.length;
   var dots=document.getElementById('cdots'), carousel=document.getElementById('carousel');
-  var i=0, timer;
+  var i=0, timer, sc=1, h=0, DWELL=8000, PAN=6800;
   slides.forEach(function(s,idx){var b=document.createElement('button'); if(idx===0)b.className='on'; b.addEventListener('click',function(){go(idx);reset();}); dots.appendChild(b);});
   var dotEls=[].slice.call(dots.children);
-  function scaleFrames(){
-    var w=carousel.clientWidth, sc=w/1440, h=Math.round(w*0.60);
-    slides.forEach(function(s){ s.style.height=h+'px'; var f=s.querySelector('iframe');
-      f.style.width='1440px'; f.style.height=Math.round(h/sc)+'px'; f.style.transform='scale('+sc+')'; });
-  }
-  function load(idx){ var f=slides[idx].querySelector('iframe'); if(f && !f.src && f.getAttribute('data-src')){ f.src=f.getAttribute('data-src'); f.addEventListener('load',function(){var p=slides[idx].querySelector('.ph2'); if(p)p.style.display='none';}); } }
-  function go(n){ i=(n+N)%N; track.style.transform='translateX(-'+(i*100)+'%)'; dotEls.forEach(function(d,k){d.classList.toggle('on',k===i);}); load(i); load((i+1)%N); }
-  function reset(){ clearInterval(timer); timer=setInterval(function(){go(i+1);},5000); }
+  function fullH(s){var f=s.querySelector('iframe'); try{return (f.contentDocument&&f.contentDocument.body)?f.contentDocument.body.scrollHeight:0;}catch(e){return 0;}}
+  function sizeOne(s){var f=s.querySelector('iframe'); var fh=f.getAttribute('data-fh'); f.style.width='1440px'; f.style.height=(fh?fh:Math.round(h/sc))+'px'; f.style.transformOrigin='top left'; f.style.transition='none'; f.style.transform='scale('+sc+') translateY(0px)';}
+  function scaleFrames(){ var w=carousel.clientWidth; sc=w/1440; h=Math.round(w*0.60); slides.forEach(function(s){ s.style.height=h+'px'; sizeOne(s); }); pan(i); }
+  function load(idx){ var f=slides[idx].querySelector('iframe'); if(f && !f.src && f.getAttribute('data-src')){ f.src=f.getAttribute('data-src'); f.addEventListener('load',function(){ var p=slides[idx].querySelector('.ph2'); if(p)p.style.display='none'; var fh=fullH(slides[idx]); if(fh){ f.setAttribute('data-fh',fh); f.style.height=fh+'px'; } if(idx===i) pan(i); }); } }
+  function pan(idx){ slides.forEach(function(s,k){ if(k!==idx){ var g=s.querySelector('iframe'); g.style.transition='none'; g.style.transform='scale('+sc+') translateY(0px)'; } }); var f=slides[idx].querySelector('iframe'); var fh=parseInt(f.getAttribute('data-fh')||'0',10); f.style.transition='none'; f.style.transform='scale('+sc+') translateY(0px)'; if(!fh) return; var maxScaled=Math.min(fh*sc-h, h*1.25); if(maxScaled<24) return; var tU=Math.round(maxScaled/sc); requestAnimationFrame(function(){ requestAnimationFrame(function(){ f.style.transition='transform '+PAN+'ms linear'; f.style.transform='scale('+sc+') translateY(-'+tU+'px)'; }); }); }
+  function go(n){ i=(n+N)%N; track.style.transform='translateX(-'+(i*100)+'%)'; dotEls.forEach(function(d,k){d.classList.toggle('on',k===i);}); load(i); load((i+1)%N); pan(i); }
+  function reset(){ clearInterval(timer); timer=setInterval(function(){go(i+1);},DWELL); }
   document.getElementById('cnext').addEventListener('click',function(){go(i+1);reset();});
   document.getElementById('cprev').addEventListener('click',function(){go(i-1);reset();});
   carousel.addEventListener('mouseenter',function(){clearInterval(timer);});

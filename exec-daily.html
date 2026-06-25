@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Executive Daily Brief · Chris Clark Portfolio</title>
+<style>
+:root{
+ --bg-deep:#0A2540;--bg-panel:#0E2C49;--bg-surface:#123A5C;--bg-surface-lt:#17436A;
+ --border:rgba(231,207,142,.16);--border-lt:rgba(231,207,142,.28);
+ --text:#F4F7FA;--muted:#C7D3DF;--dim:#9FB1C2;
+ --gold:#A9832C;--gold-bright:#C8A24B;--cream:#E7CF8E;
+ --good:#46C08A;--good-bg:rgba(70,192,138,.14);--warn:#E0A53B;--warn-bg:rgba(224,165,59,.14);
+ --bad:#E06B6B;--bad-bg:rgba(224,107,107,.14);--info:#5AA2D6;
+ --serif:Georgia,'Times New Roman',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.top{display:flex;align-items:center;justify-content:space-between;padding:16px 26px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#0c2c49,#0A2540)}
+.brand{display:flex;align-items:baseline;gap:14px}
+.brand .name{font-family:var(--serif);font-size:22px;letter-spacing:.5px;color:#fff}
+.brand .sub{font-family:var(--serif);font-size:13px;letter-spacing:3px;color:var(--cream);text-transform:uppercase}
+.brand .diamond{color:var(--gold);font-size:13px}
+.brand .ttl{font-family:var(--serif);font-size:18px;color:var(--cream);letter-spacing:1px;text-transform:uppercase}
+.topright{display:flex;align-items:center;gap:18px;text-align:right}
+.badge{font-size:10px;font-weight:700;letter-spacing:1px;color:#0A1B2C;background:var(--good);padding:4px 9px;border-radius:4px}
+.clock .t{font-family:var(--serif);font-size:22px;color:#fff;letter-spacing:1px}
+.clock .d{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+/* ticker */
+.ticker{display:flex;align-items:center;gap:10px;background:#081E33;border-bottom:1px solid var(--border);overflow:hidden;height:40px}
+.ticker .lbl{flex:0 0 auto;background:var(--gold);color:#0A1B2C;font-weight:800;font-size:10px;letter-spacing:1.5px;padding:0 12px;align-self:stretch;display:flex;align-items:center}
+.tk-track{display:flex;gap:34px;white-space:nowrap;animation:scrollx 42s linear infinite;will-change:transform}
+.ticker:hover .tk-track{animation-play-state:paused}
+@keyframes scrollx{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+.tk b{color:#fff;font-weight:700;letter-spacing:.5px}
+.tk .px{color:var(--muted)}
+.tk .up{color:var(--good)}.tk .dn{color:var(--bad)}
+.wrap{padding:18px 26px 40px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
+.kpi .k{font-size:10px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase}
+.kpi .v{font-family:var(--serif);font-size:30px;color:#fff;margin-top:3px}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:1px}
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ph h2{font-family:var(--serif);font-size:16px;color:#fff;letter-spacing:.4px;display:flex;align-items:center;gap:8px}
+.ph h2 .dia{color:var(--gold)}
+.ph .more{font-size:11px;color:var(--cream);letter-spacing:.5px}
+/* projects */
+.proj{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.proj:last-child{border-bottom:0}
+.proj .r1{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.proj .nm{font-weight:600;color:#fff;font-size:13.5px}
+.proj .meta{font-size:11px;color:var(--dim);margin-top:2px}
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--gold-bright))}
+.chip{font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.c-good{color:var(--good);background:var(--good-bg)}.c-warn{color:var(--warn);background:var(--warn-bg)}.c-bad{color:var(--bad);background:var(--bad-bg)}
+.pct{font-family:var(--serif);font-size:15px;color:var(--cream)}
+/* schedule */
+.evt{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.evt:last-child{border-bottom:0}
+.evt .tm{flex:0 0 64px;font-family:var(--serif);font-size:13px;color:var(--cream);text-align:right;padding-top:1px}
+.evt .bd{flex:1;border-left:2px solid var(--gold);padding-left:12px}
+.evt .et{font-weight:600;color:#fff;font-size:13px}
+.evt .em{font-size:11px;color:var(--dim);margin-top:1px}
+.evt.now .bd{border-color:var(--good)}
+.evt.now .et::after{content:"NOW";font-size:9px;font-weight:800;color:#0A1B2C;background:var(--good);padding:1px 6px;border-radius:3px;margin-left:8px;letter-spacing:1px}
+/* email */
+.mail{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.mail:last-child{border-bottom:0}
+.dot{flex:0 0 8px;width:8px;height:8px;border-radius:50%;margin-top:5px}
+.d-bad{background:var(--bad)}.d-warn{background:var(--warn)}.d-info{background:var(--info)}
+.mail .mt{font-weight:600;color:#fff;font-size:13px}
+.mail .mf{font-size:11px;color:var(--cream)}
+.mail .ms{font-size:12px;color:var(--muted);margin-top:2px}
+/* issues table */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:10px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--border)}
+td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.06);color:var(--muted)}
+td .id{font-family:var(--serif);color:var(--cream)}
+td .ti{color:#fff}
+tr:last-child td{border-bottom:0}
+.foot{margin-top:14px;font-size:10px;color:var(--dim);letter-spacing:.4px;text-align:center}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body>
+<div class="top">
+ <div class="brand"><span class="name">Chris Clark</span><span class="sub">Portfolio</span><span class="diamond">&#9670;</span><span class="ttl">Executive Daily Brief</span></div>
+ <div class="topright"><span class="badge">LIVE</span><div class="clock"><div class="t" id="clk">07:45:00</div><div class="d" id="dat">MONDAY · APRIL 7, 2026</div></div></div>
+</div>
+<div class="ticker"><div class="lbl">MARKETS</div><div class="tk-track" id="tkr"></div></div>
+
+<div class="wrap">
+ <div class="kpis">
+  <div class="kpi"><div class="k">Active Projects</div><div class="v">6</div><div class="s">2 at risk &middot; 4 on track</div></div>
+  <div class="kpi"><div class="k">Open Issues</div><div class="v">9</div><div class="s">2 critical &middot; 3 resolved today</div></div>
+  <div class="kpi"><div class="k">Meetings Today</div><div class="v">5</div><div class="s">3h 30m scheduled</div></div>
+  <div class="kpi"><div class="k">Inbox · Priority</div><div class="v">4</div><div class="s">needs reply by EOD</div></div>
+ </div>
+
+ <div class="grid">
+  <div>
+   <div class="panel">
+    <div class="ph"><h2><span class="dia">&#9670;</span> Projects in Progress</h2><span class="more">PORTFOLIO VIEW &rarr;</span></div>
+    <div class="proj"><div class="r1"><div><div class="nm">Oracle Fusion · Phase 4 (WMS)</div><div class="meta">Owner: Program Office &middot; Go-live May 12 &middot; EVM SPI 1.02</div></div><span class="chip c-good">ON TRACK</span></div><div class="bar"><i style="width:82%"></i></div><div class="meta" style="margin-top:5px"><span class="pct">82%</span> complete</div></div>
+    <div class="proj"><div class="r1"><div><div class="nm">Enterprise AI · Agent Studio Rollout</div><div class="meta">Owner: AI CoE &middot; 2 agents in UAT &middot; benefits tracking live</div></div><span class="chip c-good">ON TRACK</span></div><div class="bar"><i style="width:67%"></i></div><div class="meta" style="margin-top:5px"><span class="pct">67%</span> complete</div></div>
+    <div class="proj"><div class="r1"><div><div class="nm">Data Platform · Lakehouse Migration</div><div class="meta">Owner: Data Eng &middot; vendor BAFO pending &middot; dependency on security review</div></div><span class="chip c-warn">AT RISK</span></div><div class="bar"><i style="width:41%;background:linear-gradient(90deg,#A9832C,#E0A53B)"></i></div><div class="meta" style="margin-top:5px"><span class="pct">41%</span> complete</div></div>
+    <div class="proj"><div class="r1"><div><div class="nm">Integration · OIC Legacy Decommission</div><div class="meta">Owner: Integration &middot; 8 of 11 systems retired</div></div><span class="chip c-good">ON TRACK</span></div><div class="bar"><i style="width:73%"></i></div><div class="meta" style="margin-top:5px"><span class="pct">73%</span> complete</div></div>
+    <div class="proj"><div class="r1"><div><div class="nm">S/4HANA · Finance Stabilization</div><div class="meta">Owner: ERP &middot; 3 P2 defects open &middot; hypercare extended 1 wk</div></div><span class="chip c-warn">AT RISK</span></div><div class="bar"><i style="width:88%;background:linear-gradient(90deg,#A9832C,#E0A53B)"></i></div><div class="meta" style="margin-top:5px"><span class="pct">88%</span> complete</div></div>
+   </div>
+
+   <div class="panel">
+    <div class="ph"><h2><span class="dia">&#9670;</span> Issue / Resolution Tracker</h2><span class="more">ALL ISSUES &rarr;</span></div>
+    <table>
+     <tr><th>ID</th><th>Issue</th><th>Sev</th><th>Owner</th><th>Age</th><th>Status</th></tr>
+     <tr><td><span class="id">INC-4471</span></td><td><span class="ti">WMS scan latency on BA-L2</span></td><td><span class="chip c-bad">P1</span></td><td>Integration</td><td>3h</td><td><span class="chip c-warn">IN PROGRESS</span></td></tr>
+     <tr><td><span class="id">INC-4468</span></td><td><span class="ti">AI agent confidence drift</span></td><td><span class="chip c-bad">P1</span></td><td>AI CoE</td><td>6h</td><td><span class="chip c-warn">IN PROGRESS</span></td></tr>
+     <tr><td><span class="id">INC-4460</span></td><td><span class="ti">Tax code mismatch, intercompany</span></td><td><span class="chip c-warn">P2</span></td><td>ERP Finance</td><td>1d</td><td><span class="chip c-warn">IN PROGRESS</span></td></tr>
+     <tr><td><span class="id">INC-4455</span></td><td><span class="ti">OTBI report timeout</span></td><td><span class="chip c-warn">P2</span></td><td>Data Eng</td><td>2d</td><td><span class="chip c-good">RESOLVED</span></td></tr>
+     <tr><td><span class="id">INC-4451</span></td><td><span class="ti">SSO token refresh loop</span></td><td><span class="chip c-warn">P3</span></td><td>Security</td><td>2d</td><td><span class="chip c-good">RESOLVED</span></td></tr>
+     <tr><td><span class="id">INC-4449</span></td><td><span class="ti">Cold-chain alert false positive</span></td><td><span class="chip c-warn">P3</span></td><td>Ops</td><td>3d</td><td><span class="chip c-good">RESOLVED</span></td></tr>
+    </table>
+   </div>
+  </div>
+
+  <div>
+   <div class="panel">
+    <div class="ph"><h2><span class="dia">&#9670;</span> Today&#8217;s Schedule</h2><span class="more">CALENDAR &rarr;</span></div>
+    <div class="evt"><div class="tm">08:00</div><div class="bd"><div class="et">Program Steering Committee</div><div class="em">Finance, IT, Ops &middot; EVM &amp; risk review</div></div></div>
+    <div class="evt now"><div class="tm">09:30</div><div class="bd"><div class="et">AI CoE Standup</div><div class="em">Agent UAT status &middot; confidence drift</div></div></div>
+    <div class="evt"><div class="tm">11:00</div><div class="bd"><div class="et">Lakehouse Vendor BAFO</div><div class="em">Procurement &middot; final pricing round</div></div></div>
+    <div class="evt"><div class="tm">13:30</div><div class="bd"><div class="et">CFO 1:1</div><div class="em">Q3 roadmap &amp; benefits realization</div></div></div>
+    <div class="evt"><div class="tm">15:00</div><div class="bd"><div class="et">S/4HANA Hypercare Review</div><div class="em">P2 defect burndown</div></div></div>
+   </div>
+
+   <div class="panel">
+    <div class="ph"><h2><span class="dia">&#9670;</span> Inbox &mdash; Needs Attention</h2><span class="more">4 PRIORITY &rarr;</span></div>
+    <div class="mail"><span class="dot d-bad"></span><div><div class="mt">Lakehouse security sign-off</div><div class="mf">CISO &middot; 7:12 AM</div><div class="ms">Blocking BAFO. Needs your decision on residual-risk acceptance before 11:00.</div></div></div>
+    <div class="mail"><span class="dot d-warn"></span><div><div class="mt">Board deck: AI benefits slide</div><div class="mf">CFO &middot; 6:48 AM</div><div class="ms">Wants the utilization and working-capital numbers verified for Thursday.</div></div></div>
+    <div class="mail"><span class="dot d-warn"></span><div><div class="mt">Integrator change order #3</div><div class="mf">PMO &middot; Yesterday 6:20 PM</div><div class="ms">+$48K scope on WMS interfaces. Approval or pushback needed today.</div></div></div>
+    <div class="mail"><span class="dot d-info"></span><div><div class="mt">Hypercare extension approved</div><div class="mf">Ops VP &middot; Yesterday 5:05 PM</div><div class="ms">One-week extension granted. FYI &mdash; no action required.</div></div></div>
+   </div>
+  </div>
+ </div>
+ <div class="foot">All data is illustrative and anonymized for portfolio demonstration. &middot; Executive Daily Brief V1.0</div>
+</div>
+
+<script>
+(function(){
+ function pad(n){return (n<10?'0':'')+n;}
+ function tick(){var d=new Date();var c=document.getElementById('clk');if(c)c.textContent=pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+ setInterval(tick,1000);tick();
+ var syms=[['S&P 500','5,418.20','+0.62%',1],['NASDAQ','17,902.5','+0.94%',1],['DOW','40,112','-0.18%',0],
+ ['ORCL','142.18','+1.4%',1],['MSFT','428.90','+0.7%',1],['CRM','268.45','-0.5%',0],['SNOW','158.30','+2.1%',1],
+ ['NVDA','121.40','+1.9%',1],['SAP','214.05','+0.3%',1],['10Y','4.21%','+0.03',0],['WTI','$78.40','-0.6%',0],['USD/EUR','1.084','+0.1%',1]];
+ var t=document.getElementById('tkr');
+ function row(){var h='';syms.forEach(function(s){h+='<span class="tk"><b>'+s[0]+'</b><span class="px">'+s[1]+'</span><span class="'+(s[3]?'up':'dn')+'">'+(s[3]?'▲':'▼')+' '+s[2]+'</span></span>';});return h;}
+ t.innerHTML=row()+row();
+})();
+</script>
+</body></html>
