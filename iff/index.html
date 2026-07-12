@@ -96,11 +96,17 @@ section{padding:74px 0}
 /* WORK / DASHBOARDS */
 #work{background:linear-gradient(160deg,#0A2540,#123a5c);color:#fff}
 #work h2.sec{color:#fff}
-.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px}
-.dash{display:flex;flex-direction:column;gap:8px;background:rgba(255,255,255,.05);color:#fff;border-radius:var(--r);padding:24px;transition:.22s;border:1px solid rgba(231,207,142,.25)}
-.dash:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--gold);background:rgba(255,255,255,.08)}
-.dash b{font-size:16px;color:#fff;font-family:var(--serif);font-weight:500}
-.dash span{font-size:13px;color:var(--goldlt);line-height:1.45}
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;margin-top:40px}
+.dcard{background:rgba(255,255,255,.04);border:1px solid rgba(231,207,142,.28);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:.22s}
+.dcard:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--gold)}
+.dcard .thumb{position:relative;display:block;width:100%;aspect-ratio:16/10;overflow:hidden;background:#0A1B2C;border-bottom:1px solid rgba(231,207,142,.22)}
+.dcard .thumb iframe{position:absolute;top:0;left:0;width:1440px;height:900px;border:0;transform-origin:top left;pointer-events:none;background:#0A1B2C}
+.dcard .thumb .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--goldlt);font-family:var(--serif);font-size:16px}
+.dcard .body{padding:22px 24px}
+.dcard h3{font-family:var(--serif);font-weight:500;font-size:19px;color:#fff;margin-bottom:6px}
+.dcard .body p{font-size:13.5px;color:#C7D3DF;line-height:1.45;margin-bottom:16px}
+.dcard .cta{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13px;color:#0A1B2C;background:var(--gold);padding:9px 17px;border-radius:999px;transition:.2s}
+.dcard .cta:hover{background:var(--gold2)}
 @media(max-width:860px){.dash-grid{grid-template-columns:1fr}}
 
 /* TOOLKIT */
@@ -243,35 +249,26 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:26px 0;font-size:13px;text-al
 <section id="work">
 <div class="wrap">
   <span class="kick" style="color:var(--goldlt)">Selected Work · Live &amp; Interactive</span>
-  <h2 class="sec">See the work, not just the words</h2>
+  <h2 class="sec">See the work</h2>
   <div class="sec-rule"></div>
-  <p class="lead" style="color:#C7D3DF">Anonymized, fully interactive control towers I built and ran on a live Oracle Fusion estate. Click any tile to open the real dashboard.</p>
+  <p class="lead" style="color:#C7D3DF">Anonymized, fully interactive control towers I built and ran on a live Oracle Fusion estate. Each preview is the real dashboard, scaled down.</p>
   <div class="dash-grid">
-    <a class="dash reveal" href="/spyglass.html" target="_blank" rel="noopener"><b>Spyglass · Supply Chain Control Tower →</b><span>Twelve-tab operations tower: flows, OTIF 360, SKU 360, disruptions, and scenarios.</span></a>
-    <a class="dash reveal" href="/ppm.html" target="_blank" rel="noopener"><b>PPM Control Tower →</b><span>Spend, burn, earned value, sprints, KPIs, and SteerCo status with RAID and ROI.</span></a>
-    <a class="dash reveal" href="/inventory-sync.html" target="_blank" rel="noopener"><b>Inventory Sync · WMS ↔ ERP →</b><span>Plant-floor inventory synchronization and exceptions, live inside the operations tower.</span></a>
-    <a class="dash reveal" href="/exec-daily.html" target="_blank" rel="noopener"><b>Executive Daily Brief →</b><span>Projects, markets, inbox, schedule, and a full issue and resolution tracker.</span></a>
+    <div class="dcard reveal"><a class="thumb" href="/spyglass.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/spyglass.html" title="Spyglass Supply Chain Control Tower" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>Spyglass · Supply Chain Control Tower</h3><p>Twelve-tab operations tower: flows, OTIF 360, SKU 360, disruptions, and scenarios.</p><a class="cta" href="/spyglass.html" target="_blank" rel="noopener">Open the live dashboard →</a></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/ppm.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/ppm.html" title="PPM Control Tower" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>PPM Control Tower</h3><p>Spend, burn, earned value, sprints, KPIs, and SteerCo status with RAID and ROI.</p><a class="cta" href="/ppm.html" target="_blank" rel="noopener">Open the live dashboard →</a></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/inventory-sync.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/inventory-sync.html" title="Inventory Sync WMS to ERP" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>Inventory Sync · WMS ↔ ERP</h3><p>Plant-floor inventory synchronization and exceptions, live inside the operations tower.</p><a class="cta" href="/inventory-sync.html" target="_blank" rel="noopener">Open the live dashboard →</a></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/exec-daily.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/exec-daily.html" title="Executive Daily Brief" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>Executive Daily Brief</h3><p>Projects, markets, inbox, schedule, and a full issue and resolution tracker.</p><a class="cta" href="/exec-daily.html" target="_blank" rel="noopener">Open the live dashboard →</a></div></div>
   </div>
 </div>
 </section>
 
 <section id="toolkit">
 <div class="wrap">
-  <span class="kick">Recruiter Toolkit</span>
-  <h2 class="sec">Everything the search team needs, one click each</h2>
+  <span class="kick">Short Intros</span>
+  <h2 class="sec">Short Intros to Chris Clark</h2>
   <div class="sec-rule"></div>
   <div class="tk-grid">
-    <div class="tk-feature reveal">
-      <div class="l">
-        <div class="num">THE RÉSUMÉ</div>
-        <h3>Two-page executive résumé</h3>
-        <p>Outcomes-first and AI-forward. Built to read fast for recruiters and to hold up to a CFO's scrutiny.</p>
-        <a class="dl" style="border-color:rgba(255,255,255,.35);color:#fff" href="/Chris-Clark-CIO-CAIO-Resume.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a>
-      </div>
-      <div class="r"><div class="doc"></div></div>
-    </div>
-    <div class="card reveal"><div class="num">01 · AT A GLANCE</div><h3>Single-page intro slide</h3><p>Top skills, accomplishments, and motivations on one slide.</p><div class="when">Use it early</div><a class="dl" href="/Chris-Clark-Intro-Slide.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
-    <div class="card reveal"><div class="num">02 · THE STORY</div><h3>Executive journey deck</h3><p>Six slides on my story, how I work, and samples of the work.</p><div class="when">Send with applications</div><a class="dl" href="/Chris-Clark-Executive-Journey.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
+    <div class="card reveal"><div class="num">01 · THE STORY</div><h3>Executive Journey</h3><p>From Sun Microsystems engineer to founder of a sold consulting firm to enterprise CIO, ending as a Forward Deployed Executive Engineer who overlays AI onto the systems a company already runs.</p><div class="when">Send with applications</div><a class="dl" href="/Chris-Clark-Executive-Journey.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
+    <div class="card reveal"><div class="num">02 · TOP SKILLS</div><h3>Top Skills</h3><p>Top skills, accomplishments, and motivations on one slide.</p><div class="when">Use it early</div><a class="dl" href="/Chris-Clark-Intro-Slide.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
     <div class="card reveal"><div class="num">03 · PROOF</div><h3>References &amp; recommendations</h3><p>People who will go to bat for me, with context on what they saw.</p><div class="when">After the screen</div><a class="dl" href="/Chris-Clark-References.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
     <div class="card reveal"><div class="num">04 · HOW I THINK</div><h3>The executive 2-pager</h3><p>My why, my leadership approach, and a 30-60-90 day plan.</p><div class="when">Use late, before the offer</div><a class="dl" href="/Chris-Clark-Executive-2Pager.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
   </div>
@@ -299,6 +296,13 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:26px 0;font-size:13px;text-al
 document.getElementById('yr').textContent=new Date().getFullYear();
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
 document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+(function(){
+  var cards=document.querySelectorAll('.dcard');
+  function scale(){cards.forEach(function(c){var t=c.querySelector('.thumb'),f=c.querySelector('iframe');if(t&&f){f.style.transform='scale('+(t.clientWidth/1440)+')';}});}
+  var dio=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var f=e.target.querySelector('iframe');if(f&&!f.src&&f.getAttribute('data-src')){f.src=f.getAttribute('data-src');f.addEventListener('load',function(){var ph=e.target.querySelector('.ph');if(ph)ph.style.display='none';});}dio.unobserve(e.target);}});},{rootMargin:'400px'});
+  cards.forEach(function(c){dio.observe(c);});
+  scale();window.addEventListener('resize',scale);
+})();
 </script>
 </body>
 </html>
