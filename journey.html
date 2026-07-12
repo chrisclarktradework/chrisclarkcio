@@ -27,8 +27,17 @@ a{color:inherit;text-decoration:none}
 .intro h2{font-family:var(--serif);font-weight:500;font-size:27px;color:var(--ink);line-height:1.1}
 .intro .rule{width:52px;height:3px;background:var(--gold);border-radius:2px;margin:12px 0 14px}
 .intro p{font-size:15.5px;color:var(--slate);max-width:840px}
-.map{padding:6px 26px 6px}
-.map svg{width:100%;height:auto;display:block}
+
+/* ROADMAP : road with pins on top, labels in equal columns below (cannot overlap) */
+.rmap{position:relative;width:100%;aspect-ratio:1000/420;margin:16px 0 6px}
+.rmap .road{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1}
+.rmap .pin{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-weight:600;font-size:15px;border:2px solid #fff;box-shadow:0 6px 16px rgba(10,37,64,.3);z-index:3}
+.rmap .pin.dest{width:46px;height:46px;background:var(--ink);border:2px solid var(--gold);color:var(--goldlt);font-size:18px}
+.rmap .start{position:absolute;transform:translate(-50%,-50%);font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--muted);z-index:3}
+.labrow{position:absolute;left:0;right:0;top:74%;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);z-index:2}
+.lc{text-align:center;padding:6px 8px 0}
+.lc b{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--gold)}
+.lc span{display:block;font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.24;margin-top:3px}
 .close{margin:6px 44px 0;background:var(--ink);color:#fff;border-radius:var(--r);padding:24px 30px}
 .close .kick{color:var(--goldlt)}
 .close p{font-family:var(--serif);font-weight:500;font-size:19px;line-height:1.4;color:#fff;margin-top:10px}
@@ -38,11 +47,14 @@ a{color:inherit;text-decoration:none}
 .btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:var(--gold2)}
 .btn-ghost{border-color:var(--line);color:var(--ink);background:#fff}.btn-ghost:hover{border-color:var(--gold)}
 .foot .note{font-size:12px;color:var(--muted)}
-.svg-tag{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;fill:var(--gold)}
-.svg-role{font-family:var(--sans);font-size:14.5px;font-weight:700;fill:var(--ink)}
-.svg-num{font-family:var(--serif);font-size:15px;font-weight:600;fill:#fff}
-.svg-flag{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.12em;fill:var(--muted)}
-@media(max-width:640px){.top{flex-direction:column;text-align:center}.top .contact{text-align:center}.intro,.foot{padding-left:24px;padding-right:24px}.map{padding-left:12px;padding-right:12px}.close{margin-left:24px;margin-right:24px}.svg-role{font-size:18px}.svg-tag{font-size:15px}}
+@media(max-width:720px){
+  .top{flex-direction:column;text-align:center}.top .contact{text-align:center}
+  .intro,.foot{padding-left:24px;padding-right:24px}.close{margin-left:24px;margin-right:24px}
+  .rmap{aspect-ratio:auto;height:auto}.rmap .road,.rmap .pin,.rmap .start{display:none}
+  .labrow{position:static;display:block;padding:0 20px}
+  .lc{text-align:left;padding:10px 0;border-left:2px solid var(--line);padding-left:16px;position:relative}
+  .lc::before{content:"";position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--gold)}
+}
 @media print{body{background:#fff}.page{box-shadow:none;max-width:none}.foot .btn{display:none}}
 </style>
 </head>
@@ -69,58 +81,37 @@ a{color:inherit;text-decoration:none}
     <p>One road, five stops, always climbing toward the same destination: technology that changes the number on the board's page. Follow it from the bottom left up to the top right.</p>
   </div>
 
-  <div class="map">
-    <svg viewBox="0 0 1040 600" role="img" aria-label="Career roadway from Sun Microsystems engineer up to Forward Deployed Executive Engineer">
-      <defs>
-        <linearGradient id="road" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stop-color="#22364a"/>
-          <stop offset="1" stop-color="#12283c"/>
-        </linearGradient>
-        <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.3" fill="#0A2540" opacity="0.05"/>
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1040" height="600" rx="16" fill="url(#dots)"/>
-
-      <!-- ROAD (perspective ribbon, wide at bottom-left, narrowing top-right) -->
-      <path d="M34,556 C300,486 520,384 986,120 L1006,132 C560,404 360,504 118,566 Z" fill="url(#road)"/>
-      <!-- lane centre dashes -->
-      <path d="M78,560 C320,486 528,392 998,126" fill="none" stroke="#E7CF8E" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="20 22" opacity="0.9"/>
-
-      <!-- START -->
-      <text x="110" y="588" text-anchor="middle" class="svg-flag">START</text>
-
-      <!-- Node 1 -->
-      <circle cx="110" cy="524" r="16" fill="#A9832C"/><text x="110" y="529" text-anchor="middle" class="svg-num">1</text>
-      <line x1="110" y1="540" x2="110" y2="552" stroke="#A9832C" stroke-width="1.5"/>
-      <text x="150" y="512" text-anchor="middle" class="svg-tag">The Foundation</text>
-      <text x="150" y="494" text-anchor="middle" class="svg-role">Sun Microsystems · Engineer</text>
-
-      <!-- Node 2 -->
-      <circle cx="335" cy="450" r="16" fill="#A9832C"/><text x="335" y="455" text-anchor="middle" class="svg-num">2</text>
-      <line x1="335" y1="466" x2="335" y2="486" stroke="#A9832C" stroke-width="1.5"/>
-      <text x="335" y="512" text-anchor="middle" class="svg-tag">The Builder</text>
-      <text x="335" y="530" text-anchor="middle" class="svg-role">Consulting Founder · sold</text>
-
-      <!-- Node 3 -->
-      <circle cx="558" cy="372" r="16" fill="#A9832C"/><text x="558" y="377" text-anchor="middle" class="svg-num">3</text>
-      <line x1="558" y1="356" x2="558" y2="336" stroke="#A9832C" stroke-width="1.5"/>
-      <text x="558" y="322" text-anchor="middle" class="svg-tag">The Operator</text>
-      <text x="558" y="304" text-anchor="middle" class="svg-role">Enterprise CIO</text>
-
-      <!-- Node 4 -->
-      <circle cx="770" cy="286" r="16" fill="#A9832C"/><text x="770" y="291" text-anchor="middle" class="svg-num">4</text>
-      <line x1="770" y1="302" x2="770" y2="322" stroke="#A9832C" stroke-width="1.5"/>
-      <text x="770" y="348" text-anchor="middle" class="svg-tag">Transformation Leader</text>
-      <text x="770" y="366" text-anchor="middle" class="svg-role">ERP &amp; Enterprise AI Program Lead</text>
-
-      <!-- Node 5 : destination -->
-      <circle cx="978" cy="150" r="23" fill="#0A2540" stroke="#A9832C" stroke-width="3"/>
-      <text x="978" y="156" text-anchor="middle" class="svg-num" style="fill:#E7CF8E">5</text>
-      <text x="1008" y="96" text-anchor="end" class="svg-tag" style="fill:#0A2540">Today · Destination</text>
-      <text x="1008" y="115" text-anchor="end" class="svg-role" style="font-size:16px">Forward Deployed Executive Engineer</text>
-      <text x="1008" y="135" text-anchor="end" class="svg-flag">AI onto the systems they already run</text>
+  <div class="rmap">
+    <svg class="road" viewBox="0 0 1000 420" preserveAspectRatio="none" aria-hidden="true">
+      <!-- drop lines from each pin down to the label row (y=300) -->
+      <g stroke="#A9832C" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.55">
+        <line x1="100" y1="250" x2="100" y2="300"/>
+        <line x1="300" y1="200" x2="300" y2="300"/>
+        <line x1="500" y1="150" x2="500" y2="300"/>
+        <line x1="700" y1="100" x2="700" y2="300"/>
+        <line x1="900" y1="50"  x2="900" y2="300"/>
+      </g>
+      <!-- road band -->
+      <polyline points="100,250 300,200 500,150 700,100 900,50" fill="none" stroke="#22364a" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- centre dashes -->
+      <polyline points="100,250 300,200 500,150 700,100 900,50" fill="none" stroke="#E7CF8E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="16 18" opacity="0.9"/>
     </svg>
+
+    <div class="start" style="left:10%;top:71%">START</div>
+
+    <div class="pin" style="left:10%;top:59.5%">1</div>
+    <div class="pin" style="left:30%;top:47.6%">2</div>
+    <div class="pin" style="left:50%;top:35.7%">3</div>
+    <div class="pin" style="left:70%;top:23.8%">4</div>
+    <div class="pin dest" style="left:90%;top:11.9%">5</div>
+
+    <div class="labrow">
+      <div class="lc"><b>The Foundation</b><span>Sun Microsystems · Engineer</span></div>
+      <div class="lc"><b>The Builder</b><span>Consulting Founder · sold</span></div>
+      <div class="lc"><b>The Operator</b><span>Enterprise CIO</span></div>
+      <div class="lc"><b>Transformation Leader</b><span>ERP &amp; Enterprise AI Program Lead</span></div>
+      <div class="lc"><b>Today · Destination</b><span>Forward Deployed Executive Engineer</span></div>
+    </div>
   </div>
 
   <div class="close">
