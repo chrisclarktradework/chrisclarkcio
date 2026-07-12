@@ -128,6 +128,19 @@ section{padding:74px 0}
 .dcard .cta:hover{background:var(--gold2)}
 @media(max-width:860px){.dash-grid{grid-template-columns:1fr}}
 
+/* SHORT INTRO TILES (light section, reuse .dcard mechanics) */
+#toolkit .dcard{background:#fff;border:1px solid var(--line);box-shadow:var(--sh)}
+#toolkit .dcard:hover{border-color:var(--gold);box-shadow:var(--sh2)}
+#toolkit .dcard .thumb{background:var(--mist);border-bottom:1px solid var(--line)}
+#toolkit .dcard .thumb .ph{color:var(--muted)}
+#toolkit .dcard h3{color:var(--ink)}
+#toolkit .dcard .body p{color:var(--muted)}
+#toolkit .dcard .cta{color:#fff;background:var(--ink)}
+#toolkit .dcard .cta:hover{background:var(--deep)}
+#toolkit .brow{display:flex;align-items:center;gap:16px;margin-top:2px}
+#toolkit .pdfl{font-size:12.5px;font-weight:700;color:var(--gold);border-bottom:1px solid rgba(169,131,44,.45)}
+#toolkit .pdfl:hover{color:var(--ink)}
+
 /* CONTACT */
 #contact{background:linear-gradient(160deg,#0A2540,#123a5c);color:#fff;text-align:center}
 #contact h2.sec{color:#fff}
@@ -266,11 +279,11 @@ footer.ft{background:#06192c;color:#9FB1C2;padding:26px 0;font-size:13px;text-al
   <span class="kick">Short Intros</span>
   <h2 class="sec">Short Intros to Chris Clark</h2>
   <div class="sec-rule"></div>
-  <div class="tk-grid">
-    <div class="card reveal"><div class="num">01 · THE STORY</div><h3>Executive Journey</h3><p>From Sun Microsystems engineer to founder of a sold consulting firm to enterprise CIO, ending as a Forward Deployed Executive Engineer who overlays AI onto the systems a company already runs.</p><div class="when">Send with applications</div><a class="dl" href="/Chris-Clark-Executive-Journey.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
-    <div class="card reveal"><div class="num">02 · TOP SKILLS</div><h3>Top Skills</h3><p>Top skills, accomplishments, and motivations on one slide.</p><div class="when">Use it early</div><a class="dl" href="/Chris-Clark-Intro-Slide.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
-    <div class="card reveal"><div class="num">03 · PROOF</div><h3>References &amp; recommendations</h3><p>People who will go to bat for me, with context on what they saw.</p><div class="when">After the screen</div><a class="dl" href="/Chris-Clark-References.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
-    <div class="card reveal"><div class="num">04 · HOW I THINK</div><h3>The executive 2-pager</h3><p>My why, my leadership approach, and a 30-60-90 day plan.</p><div class="when">Use late, before the offer</div><a class="dl" href="/Chris-Clark-Executive-2Pager.pdf" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg> Download PDF</a></div>
+  <div class="dash-grid">
+    <div class="dcard reveal"><a class="thumb" href="/journey.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/journey.html" title="Executive Journey" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>Executive Journey</h3><p>Engineer to Forward Deployed Executive Engineer, the through-line in five milestones.</p><div class="brow"><a class="cta" href="/journey.html" target="_blank" rel="noopener">Read →</a><a class="pdfl" href="/Chris-Clark-Executive-Journey.pdf" target="_blank">↓ PDF</a></div></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/top-skills.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/top-skills.html" title="Top Skills" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>Top Skills</h3><p>The platforms, AI, integration, and delivery skills behind the outcomes.</p><div class="brow"><a class="cta" href="/top-skills.html" target="_blank" rel="noopener">Read →</a><a class="pdfl" href="/Chris-Clark-Intro-Slide.pdf" target="_blank">↓ PDF</a></div></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/references.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/references.html" title="References" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>References &amp; recommendations</h3><p>People who worked with me directly, in their own words.</p><div class="brow"><a class="cta" href="/references.html" target="_blank" rel="noopener">Read →</a><a class="pdfl" href="/Chris-Clark-References.pdf" target="_blank">↓ PDF</a></div></div></div>
+    <div class="dcard reveal"><a class="thumb" href="/two-pager.html" target="_blank" rel="noopener"><div class="ph">Loading preview…</div><iframe data-src="/two-pager.html" title="Executive 2-pager" scrolling="no" loading="lazy"></iframe></a><div class="body"><h3>The executive 2-pager</h3><p>My why, how I lead, and a 30-60-90 day plan.</p><div class="brow"><a class="cta" href="/two-pager.html" target="_blank" rel="noopener">Read →</a><a class="pdfl" href="/Chris-Clark-Executive-2Pager.pdf" target="_blank">↓ PDF</a></div></div></div>
   </div>
 </div>
 </section>
